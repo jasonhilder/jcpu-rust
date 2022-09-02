@@ -1,0 +1,3 @@
+[workspace]
+members=["jcpu-compiler", "jcpu-instructions"]
+excludes=[ "jcpu",  "jcpu-sim"]
