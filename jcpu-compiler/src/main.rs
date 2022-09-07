@@ -40,13 +40,21 @@ use crate::parser::*;
 
 fn main() {
 
-    let asmbly = r#"
+//     let asmbly = r#"
+// DATA R1, 2
+// JMPIFA 3
+// DATA R2, 3
+// ADD R1, R2
+// PRNT R2
+// DATA R1, 10
+// ADD R1, R2
+// PRNT R2
+// CLF
+// "#;
+
+let asmbly = r#"
 DATA R1, 2
-JMPIFA 0x03
 DATA R2, 3
-ADD R1, R2
-PRNT R2
-DATA R1, 10
 ADD R1, R2
 PRNT R2
 "#;

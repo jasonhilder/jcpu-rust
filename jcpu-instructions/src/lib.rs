@@ -1,3 +1,4 @@
+
 #[derive(Clone, Debug)]
 pub enum JumpFlag {
     // Where CPU flags: C (carry), A (a > than), E (a equal to), Z (a = 0)
@@ -19,7 +20,12 @@ pub enum JumpFlag {
     CAEZ= 0b1111,   //
 }
 
+pub static JUMP_FLAGS: [&str; 16] = [
+  "cf", "z", "e", "ez", "a", "az", "ae", "aez", "c", "cz", "ce", "cez", "ca", "caz", "cae", "caez"
+];
+
 // These are the machine language codes for the ALU instructions
+#[repr(u8)]
 #[derive(Clone, Debug)]
 pub enum Instruction {
     // ALU instructions are [1][OPC][RA][RB] where opcode is 3 bits, RA and RB are 2 bits
@@ -62,5 +68,5 @@ pub enum Instruction {
 pub enum Register {
     R1 = 0b00,
     R2 = 0b01,
-    R3 = 0b10
+    R3 = 0b10,
 }

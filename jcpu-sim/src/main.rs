@@ -18,7 +18,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use xcpu::cpu::register;
+// use xcpu::cpu::register;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -176,11 +176,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 // }
                 let mut color = Color::White;
 
-                if i == (sim.mb.ram.mar as usize) {
+                if i == (sim.mb.cpu.reg_mar as usize) {
                     color = Color::Red;
-                } else if i == (sim.mb.ram.mar as usize) + 1 {
+                } else if i == (sim.mb.cpu.reg_mar as usize) + 1 {
                     color = Color::Green;
-                } 
+                } else if i == (sim.mb.cpu.reg_iar as usize) { 
+                    color = Color::Yellow;
+                }
 
                 x.push(Span::styled(format!("{:02x} ", bin_data[i]), Style::default().fg(color)));
             });

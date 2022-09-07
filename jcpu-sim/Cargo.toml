@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-jcpu = { path = "./jcpu" }
-jcpuinstructions = { path = "./jcpu-instructions" }
+jcpu = { path = "../jcpu" }
+jcpuinstructions = { path = "../jcpu-instructions" }
 
 tui = "0.18"
 crossterm = "0.23"

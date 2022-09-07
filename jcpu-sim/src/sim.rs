@@ -17,7 +17,7 @@ impl Sim {
     pub fn new() -> Self {
         Self {
             // our board and CPU are 8 bits and we want to reserve 10 bytes of ram for ourselves
-            mb: Motherboard::new(10)
+            mb: Motherboard::new("./boot.img")
         }
     }
 
@@ -26,7 +26,6 @@ impl Sim {
         self.mb.cpu_state()
     }   
     pub fn get_mb_info(&mut self) -> Vec<(String,String)> {
-        // self.mb.get_mb_info()
         self.mb.mb_info()
     }
     pub fn get_cpu_details(&mut self) -> Vec<(String,String)> {
@@ -37,7 +36,7 @@ impl Sim {
     }
 
     pub fn start(&mut self) {
-        self.mb.boot("./boot.img");
+        self.mb.boot();
     }
 
     pub fn cycle(&mut self) -> bool {
