@@ -9,36 +9,11 @@ use crate::structures::{Token, TokenType};
 const MAX_RULES: usize = 10;
 
 static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RULES] = [
-    (
-        "data",
-        Instruction::DATA,
-        Some(TokenType::Identifier),
-        Some(TokenType::Value),
-    ),
-    (
-        "ld",
-        Instruction::LD,
-        Some(TokenType::Identifier),
-        Some(TokenType::Value),
-    ),
-    (
-        "st",
-        Instruction::ST,
-        Some(TokenType::Identifier),
-        Some(TokenType::Value),
-    ),
-    (
-        "add",
-        Instruction::ADD,
-        Some(TokenType::Identifier),
-        Some(TokenType::Identifier),
-    ),
-    (
-        "sub",
-        Instruction::SUB,
-        Some(TokenType::Identifier),
-        Some(TokenType::Identifier),
-    ),
+    ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value)),
+    ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Value)),
+    ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Value)),
+    ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
+    ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("jmpr", Instruction::JMPR, Some(TokenType::Identifier), None),
     ("jmp", Instruction::JMP, Some(TokenType::Value), None),
     ("jmpif", Instruction::JMPIF, Some(TokenType::Value), None),
@@ -53,7 +28,7 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenTyp
     for rule in RULES.iter() {
         if rule.0 == "jmpif" && opname.contains("jmpif") {
             if let Some(flagstr) = opname.split("jmpif").last() {
-   
+
                 for (i, flag) in JUMP_FLAGS.iter().enumerate() {
                     if flag == &flagstr.to_lowercase().as_str() {
                         return Some((rule.0, (Instruction::JMPIF as u8) | i as u8 , rule.2.clone(), None));
@@ -136,7 +111,7 @@ pub fn lex(tokens: Vec<Token>) {
                             panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", lval, tlval.ttype, tlval.line, (tlval.column - tlval.tvalue.len() - 1));
                         }
                     }
-                } 
+                }
                 if let Some(trval) = trval {
                     if let Some(rval) = rval {
                         if trval.ttype != rval {
@@ -220,6 +195,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
             },
             "clf" => bin_operations.push(op.1.clone()),
             _ => todo!()
+        }
     }
 
     // println!("{:?}", bin_operations);
@@ -234,13 +210,3 @@ fn write_file(boot_flag: u8, raw_ops: &mut Vec<u8>) {
     raw_ops.insert(0, boot_flag);
     fs::write("boot.img", raw_ops).expect("Unable to write file");
 }
-
-/*
-Add line column (+ token length) for erros
-refactor to use jcpu instructions lib
-
-write instructions to file
-add a function to write to file
- - pass a boot flag a 1 byte value as arg
- - then write to file
-*/

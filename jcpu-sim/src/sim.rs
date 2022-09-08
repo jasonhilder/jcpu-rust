@@ -5,7 +5,7 @@ The basic process here is that we have a motherboard that will power up, reserve
 whatever reason), then it will load up the boot record and jump the CPU to begin executing instructions.
 The kernel.img file must be a binary file that contains machine code of our instructions.
 
-For each cycle of the motherboard, it executes a cycle on the CPU. 
+For each cycle of the motherboard, it executes a cycle on the CPU.
 
 */
 
@@ -21,15 +21,18 @@ impl Sim {
         }
     }
 
-    // The next four functions are to display the data from the motherboard and CPU 
+    // The next four functions are to display the data from the motherboard and CPU
     pub fn get_cpu_info(&mut self) -> Vec<(String,String)> {
         self.mb.cpu_state()
-    }   
+    }
     pub fn get_mb_info(&mut self) -> Vec<(String,String)> {
         self.mb.mb_info()
     }
     pub fn get_cpu_details(&mut self) -> Vec<(String,String)> {
         self.mb.cpu_info()
+    }
+    pub fn get_alu_details(&mut self) -> Vec<(String,String)> {
+        self.mb.alu_info()
     }
     pub fn get_ram_info(&mut self) -> Vec<u8> {
         self.mb.ram_info().to_vec()

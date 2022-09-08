@@ -10,7 +10,7 @@ pub struct Motherboard {
     bootimg: String,
 }
 
-// Motherboard boots from bootfile 
+// Motherboard boots from bootfile
 // Send cpu instructions to do as cycles
 impl Motherboard {
     pub fn new(bootfile: &str) -> Motherboard {
@@ -30,7 +30,6 @@ impl Motherboard {
         vec![
             ("Cycle".to_string(), format!("{}",self.cycle_i)),
             ("Boot image size".to_string(), format!("{}",self.bootimg.len())),
-            // ("MAR".to_string(), format!("{:02x}", self.ram.mar)),
         ]
     }
 
@@ -49,7 +48,7 @@ impl Motherboard {
         true
     }
 
-    pub fn cpu_state(&self) -> Vec<(String,String)> {  
+    pub fn cpu_state(&self) -> Vec<(String,String)> {
         vec![
             ("CPU_ID".to_string(), self.cpu.name.to_string()),
             ("Arch".to_string(), self.cpu.arch.to_string()),
@@ -68,7 +67,22 @@ impl Motherboard {
             ("Register MAR".to_string(), format!("{:02x}",self.cpu.reg_mar)),
             ("Register OUT ".to_string(), format!("{:02x}",self.cpu.reg_out)),
         ]
-    }   
+    }
+
+    pub fn alu_info(&self) -> Vec<(String,String)> {
+        vec![
+            ("OR Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Or)),
+            ("AND Flag  ".to_string(), format!("{:02x}",self.cpu.alu.And)),
+            ("NOT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Not)),
+            ("SHIFT LEFT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shl)),
+            ("SHIFT RIGHT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shr)),
+            ("LESS THAN Flag  ".to_string(), format!("{:?}",self.cpu.alu.Lt)),
+            ("EQUAL TO Flag  ".to_string(), format!("{:?}",self.cpu.alu.Eq)),
+            ("ZERO Flag  ".to_string(), format!("{:?}",self.cpu.alu.Zero)),
+            ("CARRY IN Flag  ".to_string(), format!("{:?}",self.cpu.alu.Ci)),
+            ("CARRY O Flag  ".to_string(), format!("{:?}",self.cpu.alu.Co)),
+        ]
+    }
 
     pub fn boot(&mut self) {
         let boot_content = helpers::read_bin_vec(&self.bootimg);
@@ -84,10 +98,3 @@ impl Motherboard {
         self.boot()
     }
 }
-
-
-
-
-
-
-

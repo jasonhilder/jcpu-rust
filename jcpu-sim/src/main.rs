@@ -27,7 +27,7 @@ use tui::{
     text::{Span, Spans},
     widgets::{Block, Borders, Paragraph, Wrap, Table, Row, Cell},
     Terminal,
-};  
+};
 
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
     let mut sim: Sim = Sim::new();
- 
+
     sim.start();
 
     loop {
@@ -73,6 +73,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             let info_cpu = sim.get_cpu_info();
             let info_cpu_data = sim.get_cpu_details();
+            let info_alu_data = sim.get_alu_details();
             let info_ram = sim.get_ram_info();
             let info_mb = sim.get_mb_info();
 
@@ -96,9 +97,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             // Top two inner blocks
             let top_chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+                .constraints([Constraint::Percentage(30), Constraint::Percentage(50)].as_ref())
                 .split(chunks[0]);
 
+            // split cpu block
+            let cpu_blocks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(top_chunks[1]);
 
             // -----------------------------------------------------------------
             // Top left inner block
@@ -107,7 +113,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let mut text = Vec::new();
             for d in info_cpu.iter() {
                 text.push(Spans::from(Span::styled(format!("{}: {}", d.0, d.1), Style::default().fg(Color::Red))));
-            } 
+            }
 
             let paragraph = Paragraph::new(text)
                 .block(info_block)
@@ -116,23 +122,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             f.render_widget(paragraph, top_chunks[0]);
 
-
-
             // -----------------------------------------------------------------
             // Top right inner block
             let table_block = Block::default().title("CPU TABLE").borders(Borders::ALL);
- 
+
             // table
             let selected_style = Style::default().add_modifier(Modifier::REVERSED);
             let normal_style = Style::default().bg(Color::Gray);
-            let header_cells = ["Regiser", "Value"]
+            let header_cells = ["Register", "Value"]
                 .iter()
                 .map(|h| Cell::from(*h).style(Style::default().fg(Color::Black)));
             let header = Row::new(header_cells)
                 .style(normal_style)
                 .height(1)
                 .bottom_margin(1);
-            let rows = info_cpu_data.iter().map(|item| {  
+            let rows = info_cpu_data.iter().map(|item| {
                 let cells = vec![ Cell::from(item.0.clone()), Cell::from(item.1.clone()) ];
 
                 Row::new(cells).height(1 as u16).bottom_margin(0)
@@ -148,8 +152,37 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                     Constraint::Min(10),
                 ]);
 
-            f.render_widget(t, top_chunks[1]);
+            f.render_widget(t, cpu_blocks[0]);
 
+            // Top right inner block
+            let table_block_alu = Block::default().title("ALU TABLE").borders(Borders::ALL);
+
+            // table
+            let alu_header_cells = ["ALU Flag", "Value"]
+                .iter()
+                .map(|h| Cell::from(*h).style(Style::default().fg(Color::Black)));
+            let alu_header = Row::new(alu_header_cells)
+                .style(normal_style)
+                .height(1)
+                .bottom_margin(1);
+            let rows = info_alu_data.iter().map(|item| {
+                let cells = vec![ Cell::from(item.0.clone()), Cell::from(item.1.clone()) ];
+
+                Row::new(cells).height(1 as u16).bottom_margin(0)
+            });
+            let t_a = Table::new(rows)
+                .header(alu_header)
+                .block(table_block_alu)
+                .highlight_style(selected_style)
+                .highlight_symbol(">> ")
+                .widths(&[
+                    Constraint::Percentage(50),
+                    Constraint::Length(30),
+                    Constraint::Min(10),
+                ]);
+
+
+            f.render_widget(t_a, cpu_blocks[1]);
 
 
             // -----------------------------------------------------------------
@@ -180,7 +213,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                     color = Color::Red;
                 } else if i == (sim.mb.cpu.reg_mar as usize) + 1 {
                     color = Color::Green;
-                } else if i == (sim.mb.cpu.reg_iar as usize) { 
+                } else if i == (sim.mb.cpu.reg_iar as usize) {
                     color = Color::Yellow;
                 }
 
@@ -201,7 +234,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 ))
                 .title_alignment(Alignment::Left)
                 .borders(Borders::ALL);
- 
+
             // table
             let selected_style = Style::default().add_modifier(Modifier::REVERSED);
             let normal_style = Style::default().bg(Color::Gray);
@@ -235,7 +268,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
-                KeyCode::Char('r') => sim.reset(), 
+                KeyCode::Char('r') => sim.reset(),
                 KeyCode::Char('c') => {
                     sim.cycle();
                 },
@@ -243,4 +276,4 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             }
         }
     }
-} 
+}
