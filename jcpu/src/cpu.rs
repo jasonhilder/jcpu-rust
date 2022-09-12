@@ -47,8 +47,9 @@ impl CPU {
                 Lt: false,
                 Eq: false,
                 Zero: false,
-                Ci: 0,          // Carry in
-                Co: 0,  
+                C: 0,          // Carry flag
+                S: 0,          // Sign flag
+            
             }
         }
     }

@@ -14,8 +14,8 @@ pub struct ALU {
     pub Lt: bool,
     pub Eq: bool,
     pub Zero: bool,
-    pub Ci: u8,          // Carry in
-    pub Co: u8,          // Carry out
+    pub C: u8,          // Carry in
+    pub S: u8,          // Sign flag
 }
 
 impl ALU {

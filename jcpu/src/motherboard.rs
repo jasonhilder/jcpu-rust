@@ -76,11 +76,11 @@ impl Motherboard {
             ("NOT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Not)),
             ("SHIFT LEFT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shl)),
             ("SHIFT RIGHT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shr)),
-            ("LESS THAN Flag  ".to_string(), format!("{:?}",self.cpu.alu.Lt)),
-            ("EQUAL TO Flag  ".to_string(), format!("{:?}",self.cpu.alu.Eq)),
-            ("ZERO Flag  ".to_string(), format!("{:?}",self.cpu.alu.Zero)),
-            ("CARRY IN Flag  ".to_string(), format!("{:?}",self.cpu.alu.Ci)),
-            ("CARRY O Flag  ".to_string(), format!("{:?}",self.cpu.alu.Co)),
+            ("LESS THAN Flag  ".to_string(), if self.cpu.alu.Lt {"1".to_string()} else {"0".to_string()}),
+            ("EQUAL TO Flag  ".to_string(), if self.cpu.alu.Eq {"1".to_string()} else {"0".to_string()}),
+            ("ZERO Flag  ".to_string(), if self.cpu.alu.Zero {"1".to_string()} else {"0".to_string()}),
+            ("CARRY Flag  ".to_string(), format!("{:?}",self.cpu.alu.C)),
+            ("Sign Flag  ".to_string(), format!("{:?}",self.cpu.alu.S)),
         ]
     }
 
