@@ -6,10 +6,11 @@
     and the related XCPU lib
 
 
-    @TODO 
+    @TODO
     for vga buffer use an ascii square &#9632; (write raw ascii to terminal)
     change color of character
 */
+
 
 
 pub mod sim;
@@ -32,6 +33,8 @@ use tui::{
     Terminal,
 };
 
+pub const FULL: &str = "█";
+// pub const HALF: &str = "▄";
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -135,18 +138,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let vga_block = Block::default().title("VGA BUFFER").borders(Borders::ALL);
 
             // ram text input
-            let bin_data = &info_ram;
-
-            let mut vga_b:Vec <Span> = Vec::new();
-            for i in 0..10 {
-                // TUI strips newlines in spans...
-                // if i % 15 == 0 && i != 0 {
-                //     x.push(Span::raw("\r\n"));
-                // }
+            let mut text = vec![];
+            for _ in 0..8 {
+                let mut vga_b:Vec <Span> = Vec::new();
                 let color = Color::White;
-                vga_b.push(Span::styled(format!("{:02x} ", bin_data[i]), Style::default().fg(color)));
+                for _ in 0..8 {
+                    vga_b.push(Span::styled(FULL, Style::default().fg(color)));
+                }
+                text.push(Spans::from(vga_b));
             }
-            let v_paragraph = Paragraph::new(Spans::from(vga_b)).block(vga_block).alignment(Alignment::Left).wrap(Wrap { trim : true});
+            let v_paragraph = Paragraph::new(text).block(vga_block).alignment(Alignment::Left).wrap(Wrap {trim: false});
 
             f.render_widget(v_paragraph, cpu_info_blocks[1]);
             // -----------------------------------------------------------------
