@@ -1,15 +1,15 @@
 pub struct ALU {
-    pub A: u8,   
+    pub A: u8,
     pub B: u8,
 
-    
+
     pub Or: u8,
     pub And: u8,
     pub Not: u8,
     pub Shl: u8,
     pub Shr: u8,
     pub Sum: u8,
-    
+
 
     pub Lt: bool,
     pub Eq: bool,
@@ -27,13 +27,28 @@ impl ALU {
         self.B = val
     }
 
-    pub fn op_add(&self) -> u8 {
-        self.A + self.B 
+    pub fn op_add(&mut self) -> u8 {
+        let res = self.A as isize + self.B as isize;
+
+        self.check_sign_and_carry(res);
+
+        (res % 255) as u8
     }
 
-    pub fn op_sub(&self) -> u8 {
-        self.A - self.B 
+    pub fn op_sub(&mut self) -> u8 {
+        let res = self.A as isize - self.B as isize;
+
+        self.check_sign_and_carry(res);
+
+        (res % 255) as u8
+
     }
+
+    // st: store value* at regA in ram location
+    // set prev to current mar, set mar to regb value, read set mar back to prev
+
+    // ld: load value* at regB in regA ram location*
+    // set prev to current mar, set mar to regb value, read set mar back to prev
 
     pub fn flags(&mut self) {
         self.Or = self.A | self.B;
@@ -46,6 +61,16 @@ impl ALU {
         self.Lt = if self.A < self.B { true } else { false };
         self.Eq = if self.A == self.B { true } else { false };
         self.Zero = if self.A == 0 { true } else { false };
+    }
+
+    fn check_sign_and_carry(&mut self, num: isize) {
+        if num > 127  || num < -128 {
+            self.C = 1;
+        }
+
+        if num < 0 {
+           self.S = 1;
+        }
     }
 
 }

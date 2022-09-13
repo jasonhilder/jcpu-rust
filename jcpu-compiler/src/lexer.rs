@@ -10,8 +10,8 @@ const MAX_RULES: usize = 10;
 
 static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RULES] = [
     ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value)),
-    ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Value)),
-    ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Value)),
+    ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
+    ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("jmpr", Instruction::JMPR, Some(TokenType::Identifier), None),
@@ -37,10 +37,8 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenTyp
 
                 panic!("unknown jump flag on jumpif");
             };
-        } else {
-            if rule.0 == opname {
-                return Some((rule.0, rule.1.clone() as u8, rule.2.clone(), rule.3.clone() ));
-            }
+        } else if rule.0 == opname {
+            return Some((rule.0, rule.1.clone() as u8, rule.2.clone(), rule.3.clone() ));
         }
     }
     None
@@ -162,7 +160,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
 
     for op in vec.iter() {
         match op.0 {
-            "data" | "ld" | "st" => {
+            "data" => {
                 // u8|u8 packed, next byte u8
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());
@@ -171,8 +169,8 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 bin_operations.push((op.1.clone() as u8) | (l_register as u8) << 2);
                 bin_operations.push(r_value);
                 // need to get next byte
-            }
-            "add" | "sub" => {
+            },
+            "add" | "sub" | "ld" | "st" => {
                 // u8|u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());
