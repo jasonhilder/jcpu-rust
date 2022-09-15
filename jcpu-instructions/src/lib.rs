@@ -34,8 +34,8 @@ pub enum Instruction {
     ADD  = 0b10000000,
     SUB  = 0b10010000,
 
-    // Print to terminal
-    PRNT = 0b11000000,
+    // COMPARISON
+    CMP = 0b11000000,
 
     // Load into RB from RAM address in RA
     // LD RA, RB

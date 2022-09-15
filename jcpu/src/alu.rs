@@ -44,12 +44,6 @@ impl ALU {
 
     }
 
-    // st: store value* at regA in ram location
-    // set prev to current mar, set mar to regb value, read set mar back to prev
-
-    // ld: load value* at regB in regA ram location*
-    // set prev to current mar, set mar to regb value, read set mar back to prev
-
     pub fn flags(&mut self) {
         self.Or = self.A | self.B;
         self.And = self.A & self.B;

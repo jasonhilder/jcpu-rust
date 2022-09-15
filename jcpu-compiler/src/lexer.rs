@@ -14,10 +14,10 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RU
     ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier)),
+    ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier)),
     ("jmpr", Instruction::JMPR, Some(TokenType::Identifier), None),
     ("jmp", Instruction::JMP, Some(TokenType::Value), None),
     ("jmpif", Instruction::JMPIF, Some(TokenType::Value), None),
-    ("prnt", Instruction::PRNT, Some(TokenType::Identifier), None),
     ("clf", Instruction::CLF, None, None)
 ];
 

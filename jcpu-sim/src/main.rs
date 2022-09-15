@@ -11,8 +11,6 @@
     change color of character
 */
 
-
-
 pub mod sim;
 
 use sim::Sim;
@@ -34,6 +32,8 @@ use tui::{
 };
 
 pub const FULL: &str = "█";
+const VGA_BUFFER_SIZE: usize = 8 * 8;
+
 // pub const HALF: &str = "▄";
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -82,6 +82,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let info_alu_data = sim.get_alu_details();
             let info_ram = sim.get_ram_info();
             let info_mb = sim.get_mb_info();
+            let info_vga: &[u8] = &info_ram[0..VGA_BUFFER_SIZE];
 
             // -----------------------------------------------------------------
             // Surrounding block
@@ -139,11 +140,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             // ram text input
             let mut text = vec![];
+            let mut vga_index = 0;
             for _ in 0..8 {
                 let mut vga_b:Vec <Span> = Vec::new();
-                let color = Color::White;
+                // info_vga[vga_index]
+                
                 for _ in 0..8 {
+                    let value = info_vga[vga_index];
+                    let color = Color::Rgb(value, value, value);
+
                     vga_b.push(Span::styled(FULL, Style::default().fg(color)));
+                    vga_index += 1;
                 }
                 text.push(Spans::from(vga_b));
             }
