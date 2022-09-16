@@ -1,6 +1,6 @@
-use jcpuinstructions::{Instruction, Register};
+use jcpuinstructions::{Instruction, Register, JumpFlag};
 
-use crate::{alu::ALU, ram::Ram};
+use crate::{alu::ALU, ram::Ram, motherboard::BOOT_ADDR};
 
 pub struct CPU {
     // just some descriptors because we're fancy like that
@@ -12,6 +12,7 @@ pub struct CPU {
     pub reg_1: u8,
     pub reg_2: u8,
     pub reg_3: u8,
+    pub reg_4: u8,
     pub reg_iar: u8,    // address of the next instruction to load into IR
     pub reg_mar: u8,    // memory address register (we should have an MDR but for expediency we won't)
     pub reg_ir: u8,     // instruction register, contains the instruction being executed
@@ -29,6 +30,7 @@ impl CPU {
             reg_1: 0,
             reg_2: 0,
             reg_3: 0,
+            reg_4: 0,
             reg_iar: 0,
             reg_ir: 0,
             reg_mar: 0,
@@ -91,7 +93,7 @@ impl CPU {
         if (instruction >> 7) == 0b1 {
             let reg_a = (instruction & 0x0C) >> 2;
             let reg_b = instruction & 0x03;
-
+            
             self.alu.set_a(self.get_register(reg_a));
             self.alu.set_b(self.get_register(reg_b));
 
@@ -120,6 +122,8 @@ impl CPU {
         } else {
             let reg_a = (instruction & 0x0C) >> 2;
             let reg_b = instruction & 0x03;
+            let flags = instruction & 0b00001111;
+
 
             if opcode == Instruction::DATA as u8 {
                 self.reg_mar += 1;
@@ -153,7 +157,20 @@ impl CPU {
 
                 // set mar back to prev
                 self.reg_mar = prev;
-            } else {
+            } else if opcode == Instruction::JMP as u8 {
+                self.reg_iar = (BOOT_ADDR) as u8 + reg_a;
+
+                self.reg_mar = self.reg_iar
+            } else if opcode == Instruction::JMPR as u8 {
+                self.reg_iar = self.get_register(reg_a);
+
+                self.reg_mar = self.reg_iar
+            } else if opcode == Instruction::JMPIF as u8 {
+                if self.alu.match_flags(flags) {
+                    self.reg_iar = (BOOT_ADDR as u8) + reg_a;
+                    self.reg_mar = self.reg_iar;
+                }
+            }else {
                 panic!("[cpu] unknown instruction")
             }
             //
@@ -171,6 +188,8 @@ impl CPU {
             self.reg_2 = value;
         } else if reg == Register::R3 as u8 {
             self.reg_3 = value;
+        } else if reg == Register::R4 as u8 {
+            self.reg_4 = value;
         } else {
             panic!("[cpu] unknown register")
         }
@@ -183,6 +202,8 @@ impl CPU {
             self.reg_2
         } else if reg == Register::R3 as u8 {
             self.reg_3
+        } else if reg == Register::R4 as u8 {
+            self.reg_4
         } else {
             panic!("[cpu] unknown register")
         }

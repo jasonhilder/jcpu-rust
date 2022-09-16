@@ -244,7 +244,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 // }
                 let mut color = Color::White;
 
-                if i == (sim.mb.cpu.reg_mar as usize) {
+                if i == (sim.mb.cpu.reg_mar as usize) && i == (sim.mb.cpu.reg_iar as usize) {
+                    color = Color::Cyan;
+                } else if i == (sim.mb.cpu.reg_mar as usize) {
                     color = Color::Red;
                 } else if i == (sim.mb.cpu.reg_mar as usize) + 1 {
                     color = Color::Green;

@@ -1,3 +1,7 @@
+use std::convert::TryInto;
+
+use jcpuinstructions::JumpFlag;
+
 pub struct ALU {
     pub A: u8,
     pub B: u8,
@@ -80,6 +84,34 @@ impl ALU {
         if num < 0 {
            self.S = 1;
         }
+    }
+ 
+
+    pub fn match_flags(&self, flags: u8) -> bool { 
+        
+        if flags == JumpFlag::CF as u8 {
+            return if self.C == 1 { true } else { false }
+        };
+        if flags == JumpFlag::Z as u8 {
+            return self.Zero
+        };
+
+        // if flags == JumpFlag::E as u8 {};
+        // if flags == JumpFlag::EZ as u8 {};
+        // if flags == JumpFlag::A as u8 {};
+        // if flags == JumpFlag::AZ as u8 {};
+        // if flags == JumpFlag::AE as u8 {};
+        // if flags == JumpFlag::AEZ as u8 {};
+        // if flags == JumpFlag::C as u8 {};
+        // if flags == JumpFlag::CZ as u8 {};
+        // if flags == JumpFlag::CE as u8 {};
+        // if flags == JumpFlag::CEZ as u8 {};
+        // if flags == JumpFlag::CA as u8 {};
+        // if flags == JumpFlag::CAZ as u8 {};
+        // if flags == JumpFlag::CAE as u8 {};
+        // if flags == JumpFlag::CAEZ as u8 {};
+
+        false
     }
 
 }

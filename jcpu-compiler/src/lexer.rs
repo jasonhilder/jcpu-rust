@@ -30,6 +30,7 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenTyp
     for rule in RULES.iter() {
         if rule.0 == "jmpif" && opname.contains("jmpif") {
             if let Some(flagstr) = opname.split("jmpif").last() {
+                println!("last: {}", flagstr);
 
                 for (i, flag) in JUMP_FLAGS.iter().enumerate() {
                     if flag == &flagstr.to_lowercase().as_str() {
@@ -190,7 +191,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
         }
     }
 
-    println!("ops: \n {:#?}", operations);
+    //println!("ops: \n {:#?}", operations);
     // run compile function
     compile(operations)
 }
@@ -200,6 +201,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
     let mut bin_operations: Vec<u8> = Vec::new();
 
     for op in vec.iter() {
+        println!("op: {}", op.0);
         match op.0 {
             "data" => {
                 // u8|u8 packed, next byte u8
@@ -211,12 +213,12 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 bin_operations.push(r_value);
                 // need to get next byte
             },
-            "add" | "sub" | "ld" | "st" => {
+            "add" | "sub" | "ld" | "st" | "cmp" => {
                 // u8|u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());
                 let r_register = get_register(op.3.as_ref().unwrap());
-                println!("{:08b}", op.1);
+                // println!("{:08b}", op.1);
                 bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 | (r_register as u8) << 0 )
             },
             "jmpr" | "dec" | "inc" => {

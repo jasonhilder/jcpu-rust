@@ -22,29 +22,27 @@ fn main() {
 // DEC R1
 // "#;
 
+// let asmbly = r#"
+// STOP:
+// DATA R1, 0x01
+// DATA R2, 0x10
+// JMPZ $STOP
+// "#;
+
 let asmbly = r#"
-DATA R1, 0x00
-DATA R2, 0x10
-STOP:
-
-JMP $STOP
+START:
+DATA R1, 2
+DATA R2, 2
+DATA R4, 2
+DATA R3, 1
+ADD:
+ADD R1, R2
+CMP R4, R3
+JMPIFZ $END
+DEC R4
+JMP $ADD
+END:
 "#;
-
-/*
-DATA ...
-ADD...
-
-
-start: LABEL // add "start" to a hashmap and store the len of operations vector for this label
-SUB R1,R2 // index 3 in operations vector
-
-
-print:
-JMP 0xCC
-JMP [start] // at compile time, swap out label for the index specified in the label vector
-
-display:
-*/
 
     let mut parser = Parser::new(asmbly);
     parser.parse();

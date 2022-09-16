@@ -1,7 +1,7 @@
 use crate::{ram::{self, Ram}, helpers, cpu::CPU};
 
 const VRAM_ADDR: usize = 0x00;
-const BOOT_ADDR: usize = 0x40; // ADDRESS Starts after VGA BUFFER
+pub const BOOT_ADDR: usize = VRAM_ADDR + 0x40; // ADDRESS Starts after VGA BUFFER
 
 pub struct Motherboard {
     cycle_i: usize,
@@ -62,6 +62,7 @@ impl Motherboard {
             ("Register 1  ".to_string(), format!("{:02x}",self.cpu.reg_1)),
             ("Register 2  ".to_string(), format!("{:02x}",self.cpu.reg_2)),
             ("Register 3  ".to_string(), format!("{:02x}",self.cpu.reg_3)),
+            ("Register 4  ".to_string(), format!("{:02x}",self.cpu.reg_4)),
             ("Register IR ".to_string(), format!("{:02x}",self.cpu.reg_ir)),
             ("Register IAR".to_string(), format!("{:02x}",self.cpu.reg_iar)),
             ("Register MAR".to_string(), format!("{:02x}",self.cpu.reg_mar)),
