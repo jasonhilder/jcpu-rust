@@ -13,13 +13,21 @@ fn main() {
 // LD R1, R1
 // "#;
 
+// let asmbly = r#"
+// DATA R1, 0x00
+// INC R1
+// INC R1
+// INC R1
+// DEC R1
+// DEC R1
+// "#;
+
 let asmbly = r#"
 DATA R1, 0x00
-INC R1
-INC R1
-INC R1
-DEC R1
-DEC R1
+DATA R2, 0x10
+STOP:
+
+JMP $STOP
 "#;
 
 /*
@@ -39,7 +47,8 @@ display:
 */
 
     let mut parser = Parser::new(asmbly);
-    //println!("{:#?}\n\n", parser);
     parser.parse();
-    lexer::lex(parser.tokens)
+    //println!("{:?}", parser.labels);
+    //println!("{:#?}", parser.tokens);
+    lexer::lex(parser.tokens, parser.labels)
 }

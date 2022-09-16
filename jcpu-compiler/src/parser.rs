@@ -2,14 +2,18 @@ use regex::Regex;
 
 use crate::structures::{Token, TokenType};
 
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub struct Parser {
     line: usize,
     pos: usize,
     input: String,
     tmp_string: String,
-    pub tokens: Vec<Token>
+    pub tokens: Vec<Token>,
+    pub labels: HashMap<String, usize>
 }
+
 
 impl Parser {
     pub fn new(input: &str) -> Self {
@@ -18,7 +22,8 @@ impl Parser {
             pos: 0,
             input: input.to_string(),
             tokens: vec![],
-            tmp_string: String::new()
+            tmp_string: String::new(),
+            labels: HashMap::new()
         }
     }
 
@@ -53,6 +58,25 @@ impl Parser {
                         }
 
                     }
+                },
+                ':' => { // labels dont get compiled into instructions so we just track the current line
+                    if !self.tmp_string.is_empty() {
+                        self.labels.insert(self.tmp_string.clone(), self.line);
+
+                        // reset tmp string
+                        self.tmp_string = String::new();
+
+                        self.line += 1;
+                        self.pos = 0;
+                    }
+                },
+                '$' => {
+                    self.tokens.push(Token{
+                        ttype: TokenType::Label,
+                        tvalue: self.tmp_string.clone(),
+                        line: self.line,
+                        column: self.pos,
+                    });
                 },
                 _ => self.tmp_string.push(bite)
 

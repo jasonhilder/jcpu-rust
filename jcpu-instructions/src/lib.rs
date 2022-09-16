@@ -73,4 +73,5 @@ pub enum Register {
     R1 = 0b00,
     R2 = 0b01,
     R3 = 0b10,
+    R4 = 0b11,
 }

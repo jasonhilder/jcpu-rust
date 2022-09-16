@@ -156,6 +156,7 @@ impl CPU {
             } else {
                 panic!("[cpu] unknown instruction")
             }
+            //
 
             self.reg_iar += 1;
         }

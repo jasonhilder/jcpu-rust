@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_imports, unused_assignments)]
-use std::{any::Any, fs, iter::Peekable, slice::Iter};
+use std::{any::Any, fs, iter::Peekable, slice::Iter, collections::HashMap};
 
 use jcpuinstructions::{Instruction, JumpFlag, Register, JUMP_FLAGS};
 use regex::internal::Inst;
@@ -17,9 +17,9 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RU
     ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier)),
     ("inc", Instruction::INC, Some(TokenType::Identifier), None),
     ("dec", Instruction::DEC, Some(TokenType::Identifier), None),
-    ("jmpr", Instruction::JMPR, Some(TokenType::Identifier), None),
-    ("jmp", Instruction::JMP, Some(TokenType::Value), None),
-    ("jmpif", Instruction::JMPIF, Some(TokenType::Value), None),
+    ("jmpr", Instruction::JMPR, Some(TokenType::Label), None),
+    ("jmp", Instruction::JMP, Some(TokenType::Label), None),
+    ("jmpif", Instruction::JMPIF, Some(TokenType::Label), None),
     ("clf", Instruction::CLF, None, None)
 ];
 
@@ -54,6 +54,7 @@ fn get_register(token: &Token) -> Register {
         "r1" => Register::R1,
         "r2" => Register::R2,
         "r3" => Register::R3,
+        "r4" => Register::R4,
         _ => panic!(
             "Syntax error unknown Register: {}, line: {}, column: {}",
             token.tvalue, token.line, token.column
@@ -74,7 +75,7 @@ fn get_value(token: &Token) -> u8 {
     }
 }
 
-pub fn lex(tokens: Vec<Token>) {
+pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
     let mut peekable_tokens = tokens.iter().peekable();
     let mut operations: Vec<(&str, u8, Option<Token>, Option<Token>)> = Vec::new();
 
@@ -135,9 +136,47 @@ pub fn lex(tokens: Vec<Token>) {
                     }
                 }
 
-                let a = tlval.unwrap().clone();
+                if let Some(tlval) = tlval {
+                    if tlval.ttype == TokenType::Label {
+                        let next_token = peekable_tokens.next();
 
-                operations.push((opname, op.clone() as u8, Some(a), None))
+                        if let Some(ntoken) = next_token {
+                            match ntoken.ttype {
+                                TokenType::Identifier => {
+                                    /*
+                                    we have two conditions:
+                                    first, check if a label exists, if so, add the value to the op like the below
+                                    if not, then add the identifier as a register
+                                    
+                                    cases:
+                                    JMP $start  // identifier
+                                    JMP $0xc // Value
+                                    */
+                                    if label_tabel.contains_key(&ntoken.tvalue) {
+                                        let a = Token { 
+                                            ttype: TokenType::Value, 
+                                            tvalue: label_tabel[&ntoken.tvalue].to_string(),
+                                             line: ntoken.line, 
+                                             column: ntoken.column 
+                                        };
+
+                                        operations.push((opname, op.clone() as u8, Some(a), None))
+                                    }
+                                },
+                                TokenType::Value => {
+                                    operations.push((opname, op.clone() as u8, Some(ntoken.clone()), None))
+                                },
+                                _ => panic!("write your error memssage here that we receved a garbage label")
+                            }
+                        } else {
+                            //@TODO: error
+                        }
+                    }
+                } else {
+                    let a = tlval.unwrap().clone();
+
+                    operations.push((opname, op.clone() as u8, Some(a), None))
+                } 
             } else if lval.is_none() && rval.is_none() {
                 operations.push((opname, op.clone() as u8, None, None))
             } else if lval.is_none() && rval.is_some() {
@@ -151,7 +190,7 @@ pub fn lex(tokens: Vec<Token>) {
         }
     }
 
-    // println!("ops: \n {:?}", operations);
+    println!("ops: \n {:#?}", operations);
     // run compile function
     compile(operations)
 }
@@ -180,13 +219,14 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 println!("{:08b}", op.1);
                 bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 | (r_register as u8) << 0 )
             },
-            "prnt" | "jmp" | "jmpr" | "dec" | "inc" => {
+            "jmpr" | "dec" | "inc" => {
                 // u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());
                 bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 )
             },
-            "jmpif" => {
+            // "jmp"
+            "jmpif" | "jmp" => {
                 let l_value = get_value(op.2.as_ref().unwrap());
 
                 bin_operations.push(op.1.clone());
