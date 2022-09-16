@@ -6,7 +6,7 @@ use regex::internal::Inst;
 
 use crate::structures::{Token, TokenType};
 
-const MAX_RULES: usize = 10;
+const MAX_RULES: usize = 12;
 
 static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RULES] = [
     ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value)),
@@ -15,6 +15,8 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RU
     ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier)),
     ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier)),
+    ("inc", Instruction::INC, Some(TokenType::Identifier), None),
+    ("dec", Instruction::DEC, Some(TokenType::Identifier), None),
     ("jmpr", Instruction::JMPR, Some(TokenType::Identifier), None),
     ("jmp", Instruction::JMP, Some(TokenType::Value), None),
     ("jmpif", Instruction::JMPIF, Some(TokenType::Value), None),
@@ -178,7 +180,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 println!("{:08b}", op.1);
                 bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 | (r_register as u8) << 0 )
             },
-            "prnt" | "jmp" | "jmpr" => {
+            "prnt" | "jmp" | "jmpr" | "dec" | "inc" => {
                 // u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());

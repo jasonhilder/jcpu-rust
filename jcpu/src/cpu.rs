@@ -49,7 +49,6 @@ impl CPU {
                 Zero: false,
                 C: 0,          // Carry flag
                 S: 0,          // Sign flag
-
             }
         }
     }
@@ -72,7 +71,6 @@ impl CPU {
         let opcode = instruction & 0xF0;
 
 /*
-
         1. Add a CMP op to the ALU (compiler and sim) - i.e. op_cmp
         2. the cmp will take two registers and compare them for:
             this op basically does: a - b WITHJOUT setting any registers, JUST the flags
@@ -88,9 +86,6 @@ impl CPU {
 
                 print:
                 OUT R2
-
-
-
  */
         // alu
         if (instruction >> 7) == 0b1 {
@@ -107,7 +102,13 @@ impl CPU {
                 let res = self.alu.op_sub();
                 self.set_register(reg_b, res)
             } else if opcode == Instruction::CMP as u8 {
-                self.alu.op_sub();        
+                self.alu.op_sub();
+            } else if opcode == Instruction::INC as u8 {
+                let res = self.alu.op_inc();
+                self.set_register(reg_a, res);
+            } else if opcode == Instruction::DEC as u8 {
+                let res = self.alu.op_dec();
+                self.set_register(reg_a, res);
             } else {
                 panic!("[cpu] unknown instruction")
             }

@@ -41,7 +41,22 @@ impl ALU {
         self.check_sign_and_carry(res);
 
         (res % 255) as u8
+    }
 
+    pub fn op_inc(&mut self) -> u8 {
+        let res = self.A as isize + 1;
+
+        self.check_sign_and_carry(res);
+
+        (res % 255) as u8
+    }
+
+    pub fn op_dec(&mut self) -> u8 {
+        let res = self.A as isize - 1;
+
+        self.check_sign_and_carry(res);
+
+        (res % 255) as u8
     }
 
     pub fn flags(&mut self) {

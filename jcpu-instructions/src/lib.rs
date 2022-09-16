@@ -37,6 +37,10 @@ pub enum Instruction {
     // COMPARISON
     CMP = 0b11000000,
 
+    // INCREMENT AND DECREMENT
+    INC = 0b11010000,
+    DEC = 0b10110000,
+
     // Load into RB from RAM address in RA
     // LD RA, RB
     LD   = 0b00000000,
