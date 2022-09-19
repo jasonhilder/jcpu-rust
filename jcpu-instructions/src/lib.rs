@@ -32,15 +32,15 @@ pub enum Instruction {
     // ALU instructions are [1][OPC][RA][RB] where opcode is 3 bits, RA and RB are 2 bits
     // OP contents of RA and RB and put into RB
     // OP RA, RB
-    ADD  = 0b10000000,
-    SUB  = 0b10010000,
+    ADD     = 0b10000000,
+    SUB     = 0b10010000,
 
     // COMPARISON
-    CMP = 0b11000000,
+    CMP     = 0b10100000,
 
     // INCREMENT AND DECREMENT
-    INC = 0b11010000,
-    DEC = 0b10110000,
+    INC     = 0b10110000,
+    DEC     = 0b11000000,
 
     // Load into RB from RAM address in RA
     // LD RA, RB
@@ -67,6 +67,9 @@ pub enum Instruction {
     // e.g. JMPA 0x01 ; jump to address 0x01 if the A flag is set 
     JMPIF = 0b01010000,
     CLF   = 0b01100000,
+
+    // HALT 
+    
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -110,6 +110,7 @@ impl CPU {
                 self.set_register(reg_a, res);
             } else if opcode == Instruction::DEC as u8 {
                 let res = self.alu.op_dec();
+                println!("OPDEC: res[{}] reg[{}]", res, reg_a);
                 self.set_register(reg_a, res);
             } else {
                 panic!("[cpu] unknown instruction")

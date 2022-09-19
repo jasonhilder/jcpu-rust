@@ -72,6 +72,8 @@ impl Motherboard {
 
     pub fn alu_info(&self) -> Vec<(String,String)> {
         vec![
+            ("A Register  ".to_string(), format!("{:02x}",self.cpu.alu.A)),
+            ("B Register  ".to_string(), format!("{:02x}",self.cpu.alu.B)),
             ("OR Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Or)),
             ("AND Flag  ".to_string(), format!("{:02x}",self.cpu.alu.And)),
             ("NOT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Not)),
