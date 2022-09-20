@@ -41,6 +41,7 @@ impl ALU {
 
     pub fn op_sub(&mut self) -> u8 {
         let res = self.A as isize - self.B as isize;
+        println!("A {}, B {}, sub_res {}", self.A, self.B, res);
 
         self.check_sign_and_carry(res);
 
@@ -57,6 +58,8 @@ impl ALU {
 
     pub fn op_dec(&mut self) -> u8 {
         let res = self.A as isize - 1;
+
+        println!("OPDEC: res[{}]", res);
 
         self.check_sign_and_carry(res);
 
@@ -85,10 +88,10 @@ impl ALU {
            self.S = 1;
         }
     }
- 
 
-    pub fn match_flags(&self, flags: u8) -> bool { 
-        
+
+    pub fn match_flags(&self, flags: u8) -> bool {
+
         if flags == JumpFlag::CF as u8 {
             return if self.C == 1 { true } else { false }
         };

@@ -6,7 +6,7 @@ use regex::internal::Inst;
 
 use crate::structures::{Token, TokenType};
 
-const MAX_RULES: usize = 12;
+const MAX_RULES: usize = 13;
 
 static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RULES] = [
     ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value)),
@@ -20,7 +20,8 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RU
     ("jmpr", Instruction::JMPR, Some(TokenType::Label), None),
     ("jmp", Instruction::JMP, Some(TokenType::Label), None),
     ("jmpif", Instruction::JMPIF, Some(TokenType::Label), None),
-    ("clf", Instruction::CLF, None, None)
+    ("clf", Instruction::CLF, None, None),
+    ("hlt", Instruction::HLT, None, None)
 ];
 
 fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenType>)> {
@@ -148,17 +149,17 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                                     we have two conditions:
                                     first, check if a label exists, if so, add the value to the op like the below
                                     if not, then add the identifier as a register
-                                    
+
                                     cases:
                                     JMP $start  // identifier
                                     JMP $0xc // Value
                                     */
                                     if label_tabel.contains_key(&ntoken.tvalue) {
-                                        let a = Token { 
-                                            ttype: TokenType::Value, 
+                                        let a = Token {
+                                            ttype: TokenType::Value,
                                             tvalue: label_tabel[&ntoken.tvalue].to_string(),
-                                             line: ntoken.line, 
-                                             column: ntoken.column 
+                                             line: ntoken.line,
+                                             column: ntoken.column
                                         };
 
                                         operations.push((opname, op.clone() as u8, Some(a), None))
@@ -177,7 +178,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                     let a = tlval.unwrap().clone();
 
                     operations.push((opname, op.clone() as u8, Some(a), None))
-                } 
+                }
             } else if lval.is_none() && rval.is_none() {
                 operations.push((opname, op.clone() as u8, None, None))
             } else if lval.is_none() && rval.is_some() {
@@ -235,7 +236,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 bin_operations.push(l_value as u8);
                 // jmpif 0x04
             },
-            "clf" => bin_operations.push(op.1.clone()),
+            "clf" | "hlt" => bin_operations.push(op.1.clone()),
             _ => todo!()
         }
     }

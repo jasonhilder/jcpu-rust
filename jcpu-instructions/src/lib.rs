@@ -64,12 +64,12 @@ pub enum Instruction {
     // Jump if (flag is set)
     // JMP**** ADDR
     // Where the last 4 bits indicate teh C,A,E,Z flag
-    // e.g. JMPA 0x01 ; jump to address 0x01 if the A flag is set 
+    // e.g. JMPA 0x01 ; jump to address 0x01 if the A flag is set
     JMPIF = 0b01010000,
     CLF   = 0b01100000,
 
-    // HALT 
-    
+    // HALT
+    HLT = 0b01110000
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

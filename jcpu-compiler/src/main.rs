@@ -34,14 +34,15 @@ START:
     DATA R1, 2
     DATA R2, 2
     DATA R4, 2
-    DATA R3, 1
-ADD:
+    DATA R3, 2
+ADDER:
     ADD R1, R2
     CMP R4, R3
     JMPIFZ $END
     DEC R4
     JMP $ADD
 END:
+    HLT
 "#;
 
     let mut parser = Parser::new(asmbly);

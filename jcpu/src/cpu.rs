@@ -93,7 +93,7 @@ impl CPU {
         if (instruction >> 7) == 0b1 {
             let reg_a = (instruction & 0x0C) >> 2;
             let reg_b = instruction & 0x03;
-            
+
             self.alu.set_a(self.get_register(reg_a));
             self.alu.set_b(self.get_register(reg_b));
 
@@ -110,7 +110,6 @@ impl CPU {
                 self.set_register(reg_a, res);
             } else if opcode == Instruction::DEC as u8 {
                 let res = self.alu.op_dec();
-                println!("OPDEC: res[{}] reg[{}]", res, reg_a);
                 self.set_register(reg_a, res);
             } else {
                 panic!("[cpu] unknown instruction")
@@ -171,7 +170,9 @@ impl CPU {
                     self.reg_iar = (BOOT_ADDR as u8) + reg_a;
                     self.reg_mar = self.reg_iar;
                 }
-            }else {
+            } else if opcode == Instruction::HLT as u8 {
+                return false
+            } else {
                 panic!("[cpu] unknown instruction")
             }
             //
