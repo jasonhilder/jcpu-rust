@@ -26,12 +26,13 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RU
 
 fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenType>)> {
     let opname = op.to_string().to_lowercase();
+    //println!("op: {}", opname);
 
     // handle jmpif flags
     for rule in RULES.iter() {
         if rule.0 == "jmpif" && opname.contains("jmpif") {
             if let Some(flagstr) = opname.split("jmpif").last() {
-                println!("last: {}", flagstr);
+                //println!("last: {}", flagstr);
 
                 for (i, flag) in JUMP_FLAGS.iter().enumerate() {
                     if flag == &flagstr.to_lowercase().as_str() {
@@ -84,6 +85,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
     // Process the code line by line (imperative)
     while let Some(token) = peekable_tokens.next() {
         if let Some((opname, op, lval, rval)) = rule_for_op(token.tvalue.as_str()) {
+            println!("start: {}, {:?}, {:?}", opname, lval, rval);
             /*
                 If lval and rval is_some, then we expect 3 tokens:
                     the lval and correct type, the comma and then rval and correct type
@@ -126,6 +128,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                 let a = tlval.unwrap().clone();
                 let b = trval.unwrap().clone();
 
+                println!("opname: {}", opname);
                 operations.push((opname, op.clone() as u8, Some(a), Some(b)))
             } else if lval.is_some() && rval.is_none() {
                 let tlval = peekable_tokens.next();
@@ -161,11 +164,12 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                                              line: ntoken.line,
                                              column: ntoken.column
                                         };
-
+                                        println!("opname: {}", opname);
                                         operations.push((opname, op.clone() as u8, Some(a), None))
                                     }
                                 },
                                 TokenType::Value => {
+                                    println!("opname: {}", opname);
                                     operations.push((opname, op.clone() as u8, Some(ntoken.clone()), None))
                                 },
                                 _ => panic!("write your error memssage here that we receved a garbage label")
@@ -173,13 +177,14 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                         } else {
                             //@TODO: error
                         }
-                    }
-                } else {
-                    let a = tlval.unwrap().clone();
+                    } else {
+                        let a = tlval.clone();
 
-                    operations.push((opname, op.clone() as u8, Some(a), None))
-                }
+                        operations.push((opname, op.clone() as u8, Some(a), None))
+                    }
+                } 
             } else if lval.is_none() && rval.is_none() {
+                println!("opname: {}", opname);
                 operations.push((opname, op.clone() as u8, None, None))
             } else if lval.is_none() && rval.is_some() {
                 //panic!("Syntax error left value cannot be nothing, idiot...")
@@ -192,7 +197,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
         }
     }
 
-    //println!("ops: \n {:#?}", operations);
+    println!("ops: \n {:#?}", operations);
     // run compile function
     compile(operations)
 }
@@ -202,7 +207,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
     let mut bin_operations: Vec<u8> = Vec::new();
 
     for op in vec.iter() {
-        println!("op: {}", op.0);
+        //println!("op: {}", op.0);
         match op.0 {
             "data" => {
                 // u8|u8 packed, next byte u8

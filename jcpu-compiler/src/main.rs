@@ -17,7 +17,7 @@ fn main() {
 // DATA R1, 0x00
 // INC R1
 // INC R1
-// INC R1
+// INC R1c
 // DEC R1
 // DEC R1
 // "#;
@@ -34,13 +34,13 @@ START:
     DATA R1, 2
     DATA R2, 2
     DATA R4, 2
-    DATA R3, 2
+    DATA R3, 1
 ADDER:
     ADD R1, R2
     CMP R4, R3
     JMPIFZ $END
     DEC R4
-    JMP $ADD
+    JMP $ADDER
 END:
     HLT
 "#;
@@ -48,6 +48,6 @@ END:
     let mut parser = Parser::new(asmbly);
     parser.parse();
     //println!("{:?}", parser.labels);
-    //println!("{:#?}", parser.tokens);
+    println!("{:#?}", parser.tokens);
     lexer::lex(parser.tokens, parser.labels)
 }

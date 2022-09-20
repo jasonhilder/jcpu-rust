@@ -63,6 +63,21 @@ impl CPU {
         self.reg_mar = 0;
         self.reg_ir = 0;
         self.reg_out = 0;
+        self.alu.A =  0;
+        self.alu.B = 0;
+
+        self.alu.Or = 0;
+        self.alu.And = 0;
+        self.alu.Not = 0;
+        self.alu.Shl = 0;
+        self.alu.Shr = 0;
+        self.alu.Sum = 0;
+
+        self.alu.Lt = false;
+        self.alu.Eq = false;
+        self.alu.Zero = false;
+        self.alu.C = 0; 
+        self.alu.S = 0;   
     }
 
     pub fn cycle(&mut self, ram: &mut Ram) -> bool {
@@ -104,7 +119,7 @@ impl CPU {
                 let res = self.alu.op_sub();
                 self.set_register(reg_b, res)
             } else if opcode == Instruction::CMP as u8 {
-                self.alu.op_sub();
+                self.alu.A = self.alu.op_sub();
             } else if opcode == Instruction::INC as u8 {
                 let res = self.alu.op_inc();
                 self.set_register(reg_a, res);
@@ -158,17 +173,22 @@ impl CPU {
                 // set mar back to prev
                 self.reg_mar = prev;
             } else if opcode == Instruction::JMP as u8 {
-                self.reg_iar = (BOOT_ADDR) as u8 + reg_a;
+                self.reg_mar += 1;
+                let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) - 1;
+                self.reg_iar = address; // -1 because end of function increments
 
-                self.reg_mar = self.reg_iar
             } else if opcode == Instruction::JMPR as u8 {
                 self.reg_iar = self.get_register(reg_a);
 
-                self.reg_mar = self.reg_iar
+                self.reg_mar = self.reg_iar;    
             } else if opcode == Instruction::JMPIF as u8 {
                 if self.alu.match_flags(flags) {
-                    self.reg_iar = (BOOT_ADDR as u8) + reg_a;
-                    self.reg_mar = self.reg_iar;
+                    self.reg_mar += 1;
+
+                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
+                }  else {
+                    
+                    self.reg_iar += 1;
                 }
             } else if opcode == Instruction::HLT as u8 {
                 return false
