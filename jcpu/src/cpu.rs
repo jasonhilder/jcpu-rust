@@ -17,7 +17,8 @@ pub struct CPU {
     pub reg_mar: u8,    // memory address register (we should have an MDR but for expediency we won't)
     pub reg_ir: u8,     // instruction register, contains the instruction being executed
     pub reg_out: u8,    // a bogus output register
-    pub alu: ALU
+    pub alu: ALU,
+    pub dbg_msg: String
 }
 
 impl CPU {
@@ -51,7 +52,8 @@ impl CPU {
                 Zero: false,
                 C: 0,          // Carry flag
                 S: 0,          // Sign flag
-            }
+            },
+            dbg_msg: String::from("CPU started")
         }
     }
 
@@ -76,8 +78,9 @@ impl CPU {
         self.alu.Lt = false;
         self.alu.Eq = false;
         self.alu.Zero = false;
-        self.alu.C = 0; 
-        self.alu.S = 0;   
+        self.alu.C = 0;
+        self.alu.S = 0;
+        self.dbg_msg = String::from("CPU Reset")
     }
 
     pub fn cycle(&mut self, ram: &mut Ram) -> bool {
@@ -114,17 +117,20 @@ impl CPU {
 
             if opcode == Instruction::ADD as u8 {
                 let res = self.alu.op_add();
+                self.dbg_msg = format!("Adding reg A and reg B, setting result {} to reg B", {res});
                 self.set_register(reg_b, res)
             } else if opcode == Instruction::SUB as u8 {
                 let res = self.alu.op_sub();
                 self.set_register(reg_b, res)
             } else if opcode == Instruction::CMP as u8 {
+                self.dbg_msg = String::from("Comparing reg A and reg B");
                 self.alu.A = self.alu.op_sub();
             } else if opcode == Instruction::INC as u8 {
                 let res = self.alu.op_inc();
                 self.set_register(reg_a, res);
             } else if opcode == Instruction::DEC as u8 {
                 let res = self.alu.op_dec();
+                self.dbg_msg = format!("Decrementing reg {} to value {}", (reg_a + 1), res);
                 self.set_register(reg_a, res);
             } else {
                 panic!("[cpu] unknown instruction")
@@ -145,6 +151,7 @@ impl CPU {
 
                 self.set_register(reg_a, ram.read(self.reg_mar));
 
+                self.dbg_msg = format!("Setting reg {} to value {}", (reg_a + 1), ram.read(self.reg_mar));
                 self.reg_iar += 1;
             } else if opcode == Instruction::LD as u8 {
                 // set prev to current mar,
@@ -174,20 +181,23 @@ impl CPU {
                 self.reg_mar = prev;
             } else if opcode == Instruction::JMP as u8 {
                 self.reg_mar += 1;
-                let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) - 1;
+                let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) + 1;
                 self.reg_iar = address; // -1 because end of function increments
+                self.dbg_msg = format!("Jumping to address {}", address);
 
             } else if opcode == Instruction::JMPR as u8 {
                 self.reg_iar = self.get_register(reg_a);
 
-                self.reg_mar = self.reg_iar;    
+                self.reg_mar = self.reg_iar;
             } else if opcode == Instruction::JMPIF as u8 {
                 if self.alu.match_flags(flags) {
+                    self.dbg_msg = String::from("Jump if check passed");
                     self.reg_mar += 1;
 
-                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
+                    self.dbg_msg = format!("Jumping to address {}", self.reg_mar);
+                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) + 1;
                 }  else {
-                    
+                    self.dbg_msg = String::from("Jump if check failed");
                     self.reg_iar += 1;
                 }
             } else if opcode == Instruction::HLT as u8 {

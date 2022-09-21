@@ -48,6 +48,6 @@ END:
     let mut parser = Parser::new(asmbly);
     parser.parse();
     //println!("{:?}", parser.labels);
-    println!("{:#?}", parser.tokens);
+    //println!("{:#?}", parser.tokens);
     lexer::lex(parser.tokens, parser.labels)
 }

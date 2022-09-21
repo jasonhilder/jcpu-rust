@@ -59,7 +59,7 @@ impl ALU {
     pub fn op_dec(&mut self) -> u8 {
         let res = self.A as isize - 1;
 
-        println!("OPDEC: res[{}]", res);
+        //println!("OPDEC: res[{}]", res);
 
         self.check_sign_and_carry(res);
 

@@ -37,6 +37,9 @@ impl Sim {
     pub fn get_ram_info(&mut self) -> Vec<u8> {
         self.mb.ram_info().to_vec()
     }
+    pub fn get_dbg_info(&mut self) -> String {
+        self.mb.dbg_info().to_string()
+    }
 
     pub fn start(&mut self) {
         self.mb.boot();

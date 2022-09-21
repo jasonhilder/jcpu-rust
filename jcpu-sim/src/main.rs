@@ -82,6 +82,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let info_alu_data = sim.get_alu_details();
             let info_ram = sim.get_ram_info();
             let info_mb = sim.get_mb_info();
+            let info_dbg = sim.get_dbg_info();
             let info_vga: &[u8] = &info_ram[0..VGA_BUFFER_SIZE];
 
             // -----------------------------------------------------------------
@@ -144,7 +145,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             for _ in 0..8 {
                 let mut vga_b:Vec <Span> = Vec::new();
                 // info_vga[vga_index]
-                
+
                 for _ in 0..8 {
                     let value = info_vga[vga_index];
                     let color = Color::Rgb(value, value, value);
@@ -265,6 +266,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             // -----------------------------------------------------------------
             // Bottom right block (MB INFO)
+
+            // split mb block
+            let mb_blocks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(90), Constraint::Percentage(10)].as_ref())
+                .split(bottom_chunks[1]);
+
             let mb_block = Block::default()
                 .title(Span::styled(
                     "MB INFO", Style::default().fg(Color::White)
@@ -287,7 +295,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
                 Row::new(cells).height(1 as u16).bottom_margin(0)
             });
-            let t = Table::new(rows)
+            let t_mb = Table::new(rows)
                 .header(header)
                 .block(mb_block)
                 .highlight_style(selected_style)
@@ -298,7 +306,25 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                     Constraint::Min(10),
                 ]);
 
-            f.render_widget(t, bottom_chunks[1]);
+            f.render_widget(t_mb, mb_blocks[0]);
+
+            // debug bar
+            let dbg_block = Block::default()
+                .title(Span::styled(
+                    "DEBUG INFO", Style::default().fg(Color::White)
+                ))
+                .title_alignment(Alignment::Left)
+                .borders(Borders::ALL);
+
+            let dbg_paragraph = Paragraph::new(Span::from(info_dbg))
+                .block(dbg_block)
+                .alignment(Alignment::Left)
+                .wrap(Wrap { trim: true });
+
+
+            f.render_widget(dbg_paragraph, mb_blocks[1]);
+            // -----------------------------------------------------------------
+            // Bottom Debug bar
 
         })?;
 

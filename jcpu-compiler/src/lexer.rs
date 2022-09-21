@@ -2,7 +2,6 @@
 use std::{any::Any, fs, iter::Peekable, slice::Iter, collections::HashMap};
 
 use jcpuinstructions::{Instruction, JumpFlag, Register, JUMP_FLAGS};
-use regex::internal::Inst;
 
 use crate::structures::{Token, TokenType};
 
@@ -81,17 +80,20 @@ fn get_value(token: &Token) -> u8 {
 pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
     let mut peekable_tokens = tokens.iter().peekable();
     let mut operations: Vec<(&str, u8, Option<Token>, Option<Token>)> = Vec::new();
+    let mut op_line = 0;
 
     // Process the code line by line (imperative)
     while let Some(token) = peekable_tokens.next() {
         if let Some((opname, op, lval, rval)) = rule_for_op(token.tvalue.as_str()) {
-            println!("start: {}, {:?}, {:?}", opname, lval, rval);
             /*
                 If lval and rval is_some, then we expect 3 tokens:
                     the lval and correct type, the comma and then rval and correct type
                 if lval is some and rval is none, we expect 1 more token and the corect type
                 if lval is none and rval is some, someone is a fuckign idiot
             */
+
+            // handle line
+            op_line += 1;
 
             let mut tlval: Option<&Token> = None;
             let mut trval: Option<&Token> = None;
@@ -128,7 +130,6 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                 let a = tlval.unwrap().clone();
                 let b = trval.unwrap().clone();
 
-                println!("opname: {}", opname);
                 operations.push((opname, op.clone() as u8, Some(a), Some(b)))
             } else if lval.is_some() && rval.is_none() {
                 let tlval = peekable_tokens.next();
@@ -145,6 +146,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                     if tlval.ttype == TokenType::Label {
                         let next_token = peekable_tokens.next();
 
+                        println!("new line no: {}", op_line);
                         if let Some(ntoken) = next_token {
                             match ntoken.ttype {
                                 TokenType::Identifier => {
@@ -159,17 +161,15 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                                     */
                                     if label_tabel.contains_key(&ntoken.tvalue) {
                                         let a = Token {
-                                            ttype: TokenType::Value,
-                                            tvalue: label_tabel[&ntoken.tvalue].to_string(),
+                                             ttype: TokenType::Value,
+                                             tvalue: (op_line - 1).to_string(),
                                              line: ntoken.line,
                                              column: ntoken.column
                                         };
-                                        println!("opname: {}", opname);
                                         operations.push((opname, op.clone() as u8, Some(a), None))
                                     }
                                 },
                                 TokenType::Value => {
-                                    println!("opname: {}", opname);
                                     operations.push((opname, op.clone() as u8, Some(ntoken.clone()), None))
                                 },
                                 _ => panic!("write your error memssage here that we receved a garbage label")
@@ -182,9 +182,8 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
 
                         operations.push((opname, op.clone() as u8, Some(a), None))
                     }
-                } 
+                }
             } else if lval.is_none() && rval.is_none() {
-                println!("opname: {}", opname);
                 operations.push((opname, op.clone() as u8, None, None))
             } else if lval.is_none() && rval.is_some() {
                 //panic!("Syntax error left value cannot be nothing, idiot...")
@@ -197,7 +196,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
         }
     }
 
-    println!("ops: \n {:#?}", operations);
+    // println!("ops: \n {:#?}", operations);
     // run compile function
     compile(operations)
 }
@@ -237,6 +236,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
             "jmpif" | "jmp" => {
                 let l_value = get_value(op.2.as_ref().unwrap());
 
+                println!("jmp val: {}", l_value as u8);
                 bin_operations.push(op.1.clone());
                 bin_operations.push(l_value as u8);
                 // jmpif 0x04

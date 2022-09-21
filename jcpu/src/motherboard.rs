@@ -33,6 +33,10 @@ impl Motherboard {
         ]
     }
 
+    pub fn dbg_info(&self) -> String {
+        self.cpu.dbg_msg.clone()
+    }
+
     // if false stop cpu
     pub fn cycle(&mut self) -> bool {
         self.cpu.reg_mar = self.cpu.reg_iar;
