@@ -181,7 +181,7 @@ impl CPU {
                 self.reg_mar = prev;
             } else if opcode == Instruction::JMP as u8 {
                 self.reg_mar += 1;
-                let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) + 1;
+                let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) - 1;
                 self.reg_iar = address; // -1 because end of function increments
                 self.dbg_msg = format!("Jumping to address {}", address);
 
@@ -195,7 +195,7 @@ impl CPU {
                     self.reg_mar += 1;
 
                     self.dbg_msg = format!("Jumping to address {}", self.reg_mar);
-                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) + 1;
+                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
                 }  else {
                     self.dbg_msg = String::from("Jump if check failed");
                     self.reg_iar += 1;

@@ -30,6 +30,7 @@ impl Motherboard {
         vec![
             ("Cycle".to_string(), format!("{}",self.cycle_i)),
             ("Boot image size".to_string(), format!("{}",self.bootimg.len())),
+            ("Relative address".to_string(), format!("{}", (self.cpu.reg_mar as usize) - BOOT_ADDR))
         ]
     }
 
