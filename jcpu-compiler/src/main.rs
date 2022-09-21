@@ -49,5 +49,5 @@ END:
     parser.parse();
     //println!("{:?}", parser.labels);
     //println!("{:#?}", parser.tokens);
-    lexer::lex(parser.tokens, parser.labels)
+    lexer::lex(parser.tokens)
 }

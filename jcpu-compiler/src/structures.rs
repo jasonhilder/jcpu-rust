@@ -4,7 +4,8 @@ pub enum TokenType {
     Identifier,
     Comma,
     Value,
-    Label
+    LabelSrc,
+    LabelDst,
 }
 
 #[derive(Debug,Clone)]
