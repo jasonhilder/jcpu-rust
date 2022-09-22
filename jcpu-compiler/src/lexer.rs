@@ -7,23 +7,23 @@ use crate::structures::{Token, TokenType};
 
 const MAX_RULES: usize = 13;
 
-static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>); MAX_RULES] = [
-    ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value)),
-    ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
-    ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Identifier)),
-    ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier)),
-    ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier)),
-    ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier)),
-    ("inc", Instruction::INC, Some(TokenType::Identifier), None),
-    ("dec", Instruction::DEC, Some(TokenType::Identifier), None),
-    ("jmpr", Instruction::JMPR, Some(TokenType::Label), None),
-    ("jmp", Instruction::JMP, Some(TokenType::Label), None),
-    ("jmpif", Instruction::JMPIF, Some(TokenType::Label), None),
-    ("clf", Instruction::CLF, None, None),
-    ("hlt", Instruction::HLT, None, None)
+static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize); MAX_RULES] = [
+    ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value),2),
+    ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Identifier),2),
+    ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Identifier),2),
+    ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier),1),
+    ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier),1),
+    ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier),1),
+    ("inc", Instruction::INC, Some(TokenType::Identifier), None,1),
+    ("dec", Instruction::DEC, Some(TokenType::Identifier), None,1),
+    ("jmpr", Instruction::JMPR, Some(TokenType::LabelDst), None,1),
+    ("jmp", Instruction::JMP, Some(TokenType::LabelDst), None,2),
+    ("jmpif", Instruction::JMPIF, Some(TokenType::LabelDst), None,2),
+    ("clf", Instruction::CLF, None, None,1),
+    ("hlt", Instruction::HLT, None, None,1)
 ];
 
-fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenType>)> {
+fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenType>,usize)> {
     let opname = op.to_string().to_lowercase();
     //println!("op: {}", opname);
 
@@ -35,14 +35,14 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenTyp
 
                 for (i, flag) in JUMP_FLAGS.iter().enumerate() {
                     if flag == &flagstr.to_lowercase().as_str() {
-                        return Some((rule.0, (Instruction::JMPIF as u8) | i as u8 , rule.2.clone(), None));
+                        return Some((rule.0, (Instruction::JMPIF as u8) | i as u8 , rule.2.clone(), None, rule.4));
                     }
                 }
 
                 panic!("unknown jump flag on jumpif");
             };
         } else if rule.0 == opname {
-            return Some((rule.0, rule.1.clone() as u8, rule.2.clone(), rule.3.clone() ));
+            return Some((rule.0, rule.1.clone() as u8, rule.2.clone(), rule.3.clone(), rule.4 ));
         }
     }
     None
@@ -77,15 +77,34 @@ fn get_value(token: &Token) -> u8 {
     }
 }
 
-pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
+pub fn lex(tokens: Vec<Token>) {
     let mut peekable_tokens = tokens.iter().peekable();
     let mut operations: Vec<(&str, u8, Option<Token>, Option<Token>)> = Vec::new();
+    let mut addresses: HashMap<String, usize> = HashMap::new();
     let mut op_address = 0;
 
+    // This could probably be improved, but iterate over the list and gather
+    // a list of addresses from the labels
+    for tok in &tokens {
+        if tok.ttype == TokenType::LabelSrc {
+            addresses.insert(tok.tvalue.clone(), op_address);   
+        } else if let Some(op) = rule_for_op(tok.tvalue.as_str()) {
+            // we only increment if we are an op and not a label src or another type of token
+            // we also increment the number of op size in bytes.
+            op_address += op.4;
+        }
+
+    }
+
+println!("LAbels: {:?}", addresses);
     // Process the code line by line (imperative)
     while let Some(token) = peekable_tokens.next() {
+        // Skip label sources
+        if token.ttype == TokenType::LabelSrc {
+            continue;
+        }
         
-        if let Some((opname, op, lval, rval)) = rule_for_op(token.tvalue.as_str()) {
+        if let Some((opname, op, lval, rval, _opsize)) = rule_for_op(token.tvalue.as_str()) {
             /*
                 If lval and rval is_some, then we expect 3 tokens:
                     the lval and correct type, the comma and then rval and correct type
@@ -96,18 +115,7 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
 
             let mut tlval: Option<&Token> = None;
             let mut trval: Option<&Token> = None;
-
-
-            // Do a check on which address this instruction is going to have
-            // Some instructions have a doubling effect sine the next byte shifts the address + 1
-            // WE only check the lval since our syntax doesn't have an rval that isn't simply a 2bit pair 
-            // on the instruction opcode
-            match lval {
-                None => {},
-                Some(TokenType::Label) | Some(TokenType::Value) => op_address += 2,
-                _ => op_address += 1,
-            }; 
-
+ 
 
             if lval.is_some() && rval.is_some() {
                 tlval = peekable_tokens.next();
@@ -154,10 +162,9 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                 }
 
                 if let Some(tlval) = tlval {
-                    if tlval.ttype == TokenType::Label {
+                    if tlval.ttype == TokenType::LabelDst {
                         let next_token = peekable_tokens.next();
 
-                        println!("new line no: {}", op_address);
                         if let Some(ntoken) = next_token {
                             match ntoken.ttype {
                                 TokenType::Identifier => {
@@ -170,15 +177,19 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                                     JMP $start  // identifier
                                     JMP $0xc // Value
                                     */
-                                    if label_tabel.contains_key(&ntoken.tvalue) {
+                                    
+                                    // Let's find the address in our list
+                                    if let Some(address) = addresses.get(&ntoken.tvalue) {
                                         let a = Token {
-                                             ttype: TokenType::Value,
-                                             tvalue: op_address.to_string(),
-                                             line: ntoken.line,
-                                             column: ntoken.column
-                                        };
-                                        operations.push((opname, op.clone() as u8, Some(a), None))
-                                    }
+                                            ttype: TokenType::Value,
+                                            tvalue: address.to_string(),
+                                            line: ntoken.line,
+                                            column: ntoken.column
+                                       };
+                                       operations.push((opname, op.clone() as u8, Some(a), None))
+                                    } else {
+                                        panic!("unknown address {} specified at line: {}, col: {}", &ntoken.tvalue, tlval.line, (tlval.column - tlval.tvalue.len()));   
+                                    } 
                                 },
                                 TokenType::Value => {
                                     operations.push((opname, op.clone() as u8, Some(ntoken.clone()), None))
@@ -205,9 +216,10 @@ pub fn lex(tokens: Vec<Token>, label_tabel: HashMap<String, usize>) {
                 token.line, token.column
             );
         }
-    }
 
-    println!("ops: \n {:#?}", operations);
+        op_address += 1;
+    }
+ 
     // run compile function
     compile(operations)
 }

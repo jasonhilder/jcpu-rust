@@ -61,7 +61,12 @@ impl Parser {
                 },
                 ':' => { // labels dont get compiled into instructions so we just track the current line
                     if !self.tmp_string.is_empty() {
-                        self.labels.insert(self.tmp_string.clone(), self.line);
+                        self.tokens.push(Token { 
+                            ttype: TokenType::LabelSrc, 
+                            tvalue: self.tmp_string.clone(), 
+                            line: self.line,
+                            column: self.pos 
+                        });
 
                         // reset tmp string
                         self.tmp_string = String::new();
@@ -72,7 +77,7 @@ impl Parser {
                 },
                 '$' => {
                     self.tokens.push(Token{
-                        ttype: TokenType::Label,
+                        ttype: TokenType::LabelDst,
                         tvalue: self.tmp_string.clone(),
                         line: self.line,
                         column: self.pos,

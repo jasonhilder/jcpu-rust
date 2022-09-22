@@ -1,7 +1,8 @@
 use crate::{ram::{self, Ram}, helpers, cpu::CPU};
 
+const VRAM_SIZE: usize = 8 * 8;
 const VRAM_ADDR: usize = 0x00;
-pub const BOOT_ADDR: usize = VRAM_ADDR + 0x40; // ADDRESS Starts after VGA BUFFER
+pub const BOOT_ADDR: usize = VRAM_ADDR + VRAM_SIZE; // ADDRESS Starts after VGA BUFFER
 
 pub struct Motherboard {
     cycle_i: usize,
@@ -95,7 +96,7 @@ impl Motherboard {
     pub fn boot(&mut self) {
         let boot_content = helpers::read_bin_vec(&self.bootimg);
         self.ram.fill(BOOT_ADDR as u8, boot_content);
-        self.cpu.reg_mar = BOOT_ADDR as u8 + 1; // +1 to skip boot signature
+        self.cpu.reg_mar = BOOT_ADDR as u8;
         self.cpu.reg_iar = self.cpu.reg_mar;
     }
 
