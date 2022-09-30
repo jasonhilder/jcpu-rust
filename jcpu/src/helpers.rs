@@ -9,3 +9,10 @@ pub fn read_bin_vec(filename: &str) -> Vec<u8> {
 
     buffer
 }
+
+pub fn read_instructions_to_vec(filename: &str) -> Vec<String> {
+    let read = fs::read_to_string(&filename).expect("Could not read file");
+    let res: Vec<String> = read.split("\n").map(|s| s.to_string()).collect();
+
+    res
+}

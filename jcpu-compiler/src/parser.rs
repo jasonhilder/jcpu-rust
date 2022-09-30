@@ -14,7 +14,6 @@ pub struct Parser {
     pub labels: HashMap<String, usize>
 }
 
-
 impl Parser {
     pub fn new(input: &str) -> Self {
         Self {
@@ -28,7 +27,10 @@ impl Parser {
     }
 
     pub fn parse(&mut self) {
-        for bite in self.input.chars() {
+
+        for bite in self.input.chars(){
+
+            println!("BITE: {}", bite);
 
             // increment character pos
             self.pos += 1;
@@ -56,16 +58,15 @@ impl Parser {
                                 column: self.pos,
                             })
                         }
-
-                    }
+                    }                 
                 },
                 ':' => { // labels dont get compiled into instructions so we just track the current line
                     if !self.tmp_string.is_empty() {
-                        self.tokens.push(Token { 
-                            ttype: TokenType::LabelSrc, 
-                            tvalue: self.tmp_string.clone(), 
+                        self.tokens.push(Token {
+                            ttype: TokenType::LabelSrc,
+                            tvalue: self.tmp_string.clone(),
                             line: self.line,
-                            column: self.pos 
+                            column: self.pos
                         });
 
                         // reset tmp string
@@ -83,9 +84,23 @@ impl Parser {
                         column: self.pos,
                     });
                 },
+                ';' => {
+                    // " -> skip until -> "
+                    while let Some(c) = bites.peek() {
+                        if *c == '\n' {
+                            bites.next();
+                        } else if *c == '\r' {
+                           bites.next(); // skip the next two becasue we have \r\n
+                           bites.next();
+                        } else {
+                            break;
+                        }
+                    }
+                },
                 _ => self.tmp_string.push(bite)
 
             }
+
         }
 
     }

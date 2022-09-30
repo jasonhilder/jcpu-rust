@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_imports, unused_assignments)]
-use std::{any::Any, fs, iter::Peekable, slice::Iter, collections::HashMap};
+use std::{any::Any, fs, iter::Peekable, slice::Iter, collections::HashMap, fmt::format};
 
 use jcpuinstructions::{Instruction, JumpFlag, Register, JUMP_FLAGS};
 
@@ -81,6 +81,7 @@ pub fn lex(tokens: Vec<Token>) {
     let mut peekable_tokens = tokens.iter().peekable();
     let mut operations: Vec<(&str, u8, Option<Token>, Option<Token>)> = Vec::new();
     let mut addresses: HashMap<String, usize> = HashMap::new();
+    let mut debug_ops: Vec<String> = Vec::new();
     let mut op_address = 0;
 
     // This could probably be improved, but iterate over the list and gather
@@ -93,17 +94,19 @@ pub fn lex(tokens: Vec<Token>) {
             // we also increment the number of op size in bytes.
             op_address += op.4;
         }
-
     }
 
-println!("LAbels: {:?}", addresses);
+    op_address = 0;
+
     // Process the code line by line (imperative)
     while let Some(token) = peekable_tokens.next() {
         // Skip label sources
         if token.ttype == TokenType::LabelSrc {
+        //    // addresses.insert(token.tvalue.clone(), op_address);
+            debug_ops.push(format!("{}: {}:", op_address, token.tvalue));
             continue;
         }
-        
+
         if let Some((opname, op, lval, rval, _opsize)) = rule_for_op(token.tvalue.as_str()) {
             /*
                 If lval and rval is_some, then we expect 3 tokens:
@@ -115,7 +118,7 @@ println!("LAbels: {:?}", addresses);
 
             let mut tlval: Option<&Token> = None;
             let mut trval: Option<&Token> = None;
- 
+
 
             if lval.is_some() && rval.is_some() {
                 tlval = peekable_tokens.next();
@@ -149,6 +152,7 @@ println!("LAbels: {:?}", addresses);
                 let a = tlval.unwrap().clone();
                 let b = trval.unwrap().clone();
 
+                debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
                 operations.push((opname, op.clone() as u8, Some(a), Some(b)))
             } else if lval.is_some() && rval.is_none() {
                 let tlval = peekable_tokens.next();
@@ -177,7 +181,7 @@ println!("LAbels: {:?}", addresses);
                                     JMP $start  // identifier
                                     JMP $0xc // Value
                                     */
-                                    
+
                                     // Let's find the address in our list
                                     if let Some(address) = addresses.get(&ntoken.tvalue) {
                                         let a = Token {
@@ -185,13 +189,34 @@ println!("LAbels: {:?}", addresses);
                                             tvalue: address.to_string(),
                                             line: ntoken.line,
                                             column: ntoken.column
-                                       };
-                                       operations.push((opname, op.clone() as u8, Some(a), None))
+                                        };
+
+                                        //@FIXME: Duplicate code
+                                        if opname == "jmpif" {
+                                            let f = Vec::from(JUMP_FLAGS);
+                                            let index= (op.clone() & 0b00001111) as usize;
+                                            let instruction_flags = f[index];
+                                            let ins = format!("{}{}",opname.to_uppercase(), instruction_flags.to_uppercase());
+                                            debug_ops.push(format!("{}: {} ${}", op_address, ins, ntoken.tvalue));
+                                        } else {
+                                            debug_ops.push(format!("{}: {} ${}", op_address, opname.to_uppercase(), ntoken.tvalue));
+                                        }
+                                        operations.push((opname, op.clone() as u8, Some(a), None))
                                     } else {
-                                        panic!("unknown address {} specified at line: {}, col: {}", &ntoken.tvalue, tlval.line, (tlval.column - tlval.tvalue.len()));   
-                                    } 
+                                        panic!("unknown address {} specified at line: {}, col: {}", &ntoken.tvalue, tlval.line, (tlval.column - tlval.tvalue.len()));
+                                    }
                                 },
                                 TokenType::Value => {
+                                    //@FIXME: Duplicate code
+                                    if opname == "jmpif" {
+                                        let f = Vec::from(JUMP_FLAGS);
+                                        let index= (op.clone() & 0b00001111) as usize;
+                                        let instruction_flags = f[index];
+                                        let ins = format!("{}{}",opname.to_uppercase(), instruction_flags.to_uppercase());
+                                        debug_ops.push(format!("{}: {} ${}", op_address, ins, ntoken.tvalue));
+                                    } else {
+                                        debug_ops.push(format!("{}: {} ${}", op_address, opname.to_uppercase(), ntoken.tvalue));
+                                    }
                                     operations.push((opname, op.clone() as u8, Some(ntoken.clone()), None))
                                 },
                                 _ => panic!("write your error memssage here that we receved a garbage label")
@@ -202,14 +227,18 @@ println!("LAbels: {:?}", addresses);
                     } else {
                         let a = tlval.clone();
 
+                        debug_ops.push(format!("{}: {} {}", op_address, opname.to_uppercase(), a.tvalue));
                         operations.push((opname, op.clone() as u8, Some(a), None))
                     }
                 }
             } else if lval.is_none() && rval.is_none() {
+                debug_ops.push(format!("{}: {}", op_address, opname.to_uppercase()));
                 operations.push((opname, op.clone() as u8, None, None))
             } else if lval.is_none() && rval.is_some() {
                 //panic!("Syntax error left value cannot be nothing, idiot...")
             }
+
+            op_address += _opsize;
         } else {
             panic!(
                 "Syntax error, unknown operation. line: {}, column: {}",
@@ -217,16 +246,20 @@ println!("LAbels: {:?}", addresses);
             );
         }
 
-        op_address += 1;
     }
- 
-    // run compile function
-    compile(operations)
+
+    //run compile function
+    println!("{:#?}", addresses);
+    println!("DEBUG \n {:#?}", debug_ops);
+    compile(operations);
+    write_debug_file(debug_ops)
 }
 
 // -> Vec<u8>
 fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
     let mut bin_operations: Vec<u8> = Vec::new();
+
+    println!("COMPILED OPS: {:#?}", vec);
 
     for op in vec.iter() {
         //println!("op: {}", op.0);
@@ -247,34 +280,38 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 let l_register = get_register(op.2.as_ref().unwrap());
                 let r_register = get_register(op.3.as_ref().unwrap());
                 // println!("{:08b}", op.1);
-                bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 | (r_register as u8) << 0 )
+                bin_operations.push( (op.1.clone() as u8) | (l_register.clone() as u8) << 2 | (r_register.clone() as u8) << 0 );
             },
             "jmpr" | "dec" | "inc" => {
                 // u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());
-                bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 )
+                bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 );
             },
             // "jmp"
             "jmpif" | "jmp" => {
                 let l_value = get_value(op.2.as_ref().unwrap());
 
-                println!("jmp val: {}", l_value as u8);
                 bin_operations.push(op.1.clone());
                 bin_operations.push(l_value as u8);
                 // jmpif 0x04
             },
-            "clf" | "hlt" => bin_operations.push(op.1.clone()),
+            "clf" | "hlt" => {
+                bin_operations.push(op.1.clone());
+            },
             _ => todo!()
         }
     }
 
-    // println!("{:?}", bin_operations);
+    //println!("{:?}", bin_operations);
     for op in &bin_operations {
         println!("{:08b}", op)
     }
-
     write_file(&mut bin_operations);
+}
+
+fn write_debug_file(debug_instructions: Vec<String>) {
+    fs::write("instructions.d", debug_instructions.join("\n")).expect("Unable to write file");
 }
 
 fn write_file(raw_ops: &mut Vec<u8>) {

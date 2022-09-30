@@ -1,10 +1,7 @@
 /*
-
-
     This file is largly just for UI rendering so that we can see
     what's happening under the hood. All interesting stuff happens in Sim
     and the related XCPU lib
-
 
     @TODO
     for vga buffer use an ascii square &#9632; (write raw ascii to terminal)
@@ -33,8 +30,6 @@ use tui::{
 
 pub const FULL: &str = "█";
 const VGA_BUFFER_SIZE: usize = 8 * 8;
-
-// pub const HALF: &str = "▄";
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -83,6 +78,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let info_ram = sim.get_ram_info();
             let info_mb = sim.get_mb_info();
             let info_dbg = sim.get_dbg_info();
+            let info_instructions = sim.get_cpu_instructions_text();
             let info_vga: &[u8] = &info_ram[0..VGA_BUFFER_SIZE];
 
             // -----------------------------------------------------------------
@@ -92,14 +88,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 .title_alignment(Alignment::Center);
             f.render_widget(block, size);
 
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Percentage(60), Constraint::Percentage(40)].as_ref())
+            let wrapper = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                 .horizontal_margin(2)
                 .vertical_margin(1)
                 .split(f.size());
 
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(30)].as_ref())
+                .split(wrapper[0]);
 
+            let instruction_container = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(100)])
+                .split(wrapper[1]);
 
             // -----------------------------------------------------------------
             // Top two inner blocks
@@ -326,6 +330,29 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             // -----------------------------------------------------------------
             // Bottom Debug bar
 
+
+            // -----------------------------------------------------------------
+            // Instructions block
+            let instruction_block = Block::default().title("CPU INSTRUCTIONS").borders(Borders::ALL);
+
+            let mut text = Vec::new();
+            for d in info_instructions.iter() {
+                let address = d.split(":").collect::<Vec<&str>>();
+                let mut color = Color::White;
+
+                if address[0].parse::<usize>().unwrap() == sim.mb.cpu.reg_iar as usize - 64 {
+                    color = Color::Cyan;
+                }
+
+                text.push(Spans::from(Span::styled(d, Style::default().fg(color))));
+            }
+
+            let paragraph = Paragraph::new(text)
+                .block(instruction_block)
+                .alignment(Alignment::Left)
+                .wrap(Wrap { trim: true });
+
+            f.render_widget(paragraph, instruction_container[0]);
         })?;
 
         if let Event::Key(key) = event::read()? {

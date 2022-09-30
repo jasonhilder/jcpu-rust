@@ -9,17 +9,19 @@ pub struct Motherboard {
     pub cpu: CPU,
     pub ram: Ram,
     bootimg: String,
+    instructions: String
 }
 
 // Motherboard boots from bootfile
 // Send cpu instructions to do as cycles
 impl Motherboard {
-    pub fn new(bootfile: &str) -> Motherboard {
+    pub fn new(bootfile: &str, instructions: &str) -> Motherboard {
         Motherboard {
             cycle_i: 0,
             cpu: CPU::new(),            // new CPU with 3 general purpose registers
             ram: Ram::new(),         // 256 bytes of ram - STYLING!
             bootimg: bootfile.to_string(),
+            instructions: instructions.to_string()
         }
     }
 
@@ -74,6 +76,10 @@ impl Motherboard {
             ("Register MAR".to_string(), format!("{:02x}",self.cpu.reg_mar)),
             ("Register OUT ".to_string(), format!("{:02x}",self.cpu.reg_out)),
         ]
+    }
+
+    pub fn cpu_instructions(&self) -> Vec<String> {
+        helpers::read_instructions_to_vec(&self.instructions)
     }
 
     pub fn alu_info(&self) -> Vec<(String,String)> {

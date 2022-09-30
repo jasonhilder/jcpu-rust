@@ -194,7 +194,8 @@ impl CPU {
                     self.dbg_msg = String::from("Jump if check passed");
                     self.reg_mar += 1;
 
-                    self.dbg_msg = format!("Jumping to address {}", self.reg_mar);
+                    self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
+
                     self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
                 }  else {
                     self.dbg_msg = String::from("Jump if check failed");

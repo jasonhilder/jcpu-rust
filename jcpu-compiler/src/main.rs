@@ -2,6 +2,8 @@ mod structures;
 mod parser;
 mod lexer;
 
+use std::fs;
+
 use crate::parser::*;
 
 fn main() {
@@ -29,23 +31,24 @@ fn main() {
 // JMPZ $STOP
 // "#;
 
-let asmbly = r#"
-START:
-    DATA R1, 2
-    DATA R2, 2
-    DATA R4, 2
-    DATA R3, 1
-ADDER:
-    ADD R1, R2
-    CMP R4, R3
-    JMPIFZ $END
-    DEC R4
-    JMP $ADDER
-END:
-    HLT
-"#;
+// let asmbly = r#"
+// START:
+//     DATA R1, 2
+//     DATA R2, 2
+//     DATA R4, 2
+//     DATA R3, 1
+// ADDER:
+//     ADD R1, R2
+//     CMP R4, R3
+//     JMPIFZ $END
+//     DEC R4
+//     JMP $ADDER
+// END:
+//     HLT
+// "#;
 
-    let mut parser = Parser::new(asmbly);
+    let jsm = fs::read_to_string("./main.jsm").expect("should have been able to read the file");
+    let mut parser = Parser::new(&jsm.to_string());
     parser.parse();
     //println!("{:?}", parser.labels);
     //println!("{:#?}", parser.tokens);
