@@ -51,6 +51,6 @@ fn main() {
     let mut parser = Parser::new(&jsm.to_string());
     parser.parse();
     //println!("{:?}", parser.labels);
-    //println!("{:#?}", parser.tokens);
+    println!("{:#?}", parser.tokens);
     lexer::lex(parser.tokens)
 }

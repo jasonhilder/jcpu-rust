@@ -135,10 +135,21 @@ impl CPU {
                 self.dbg_msg = format!("Decrementing reg {} to value {}", (reg_a + 1), res);
                 self.set_register(reg_a, res);
             } else if opcode == Instruction::PUSH as u8 {
-                let val = self.get_register(reg_a);
-                self.dbg_msg = format!("Setting value {} in reg {} to stack", val, (reg_a + 1));
-                ram.write(self.reg_sp, val);
-                self.reg_sp += 1;
+                // SP is after the BIN_SIZE so on boot we plus 1
+                // @TODO check for register value or literal value
+                if self.reg_sp == 255 {
+                   panic!("Stack limit reached!")
+                } else {
+                    self.reg_sp += 1;
+                    let val = self.get_register(reg_a);
+                    self.dbg_msg = format!("Setting value {} in reg {} to stack", val, (reg_a + 1));
+                    ram.write(self.reg_sp, val)
+                }
+            } else if opcode == Instruction::POP as u8 {
+                let val = ram.read(self.reg_sp);
+                self.dbg_msg = format!("Popping value {} in stack to register {}", val, (reg_a + 1));
+                self.set_register(reg_a, val);
+                self.reg_sp -= 1
             } else {
                 panic!("[cpu] unknown instruction")
             }

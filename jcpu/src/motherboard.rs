@@ -4,7 +4,7 @@ const VRAM_SIZE: usize = 8 * 8;
 const VRAM_ADDR: usize = 0x00;
 const BIN_SIZE: usize = 10 * 12;
 pub const BOOT_ADDR: usize = VRAM_ADDR + VRAM_SIZE; // ADDRESS Starts after VGA BUFFER
-pub const STACK_ADDR: usize = BIN_SIZE + 1; // Stack starts after binarY
+pub const STACK_ADDR: usize = BIN_SIZE; // Stack starts after binarY
 
 pub struct Motherboard {
     cycle_i: usize,
