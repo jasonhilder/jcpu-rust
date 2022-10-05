@@ -1,8 +1,10 @@
-use crate::{ram::{self, Ram}, helpers, cpu::CPU};
+use crate::{ram::Ram, helpers, cpu::CPU};
 
 const VRAM_SIZE: usize = 8 * 8;
 const VRAM_ADDR: usize = 0x00;
+const BIN_SIZE: usize = 10 * 12;
 pub const BOOT_ADDR: usize = VRAM_ADDR + VRAM_SIZE; // ADDRESS Starts after VGA BUFFER
+pub const STACK_ADDR: usize = BIN_SIZE + 1; // Stack starts after binarY
 
 pub struct Motherboard {
     cycle_i: usize,
@@ -75,6 +77,7 @@ impl Motherboard {
             ("Register IAR".to_string(), format!("{:02x}",self.cpu.reg_iar)),
             ("Register MAR".to_string(), format!("{:02x}",self.cpu.reg_mar)),
             ("Register OUT ".to_string(), format!("{:02x}",self.cpu.reg_out)),
+            ("Register SP ".to_string(), format!("{:02x}",self.cpu.reg_sp)),
         ]
     }
 
@@ -101,6 +104,11 @@ impl Motherboard {
 
     pub fn boot(&mut self) {
         let boot_content = helpers::read_bin_vec(&self.bootimg);
+
+        self.cpu.dbg_msg = format!("bin size: {:?}", &boot_content.len());
+        if boot_content.len() > BIN_SIZE {
+            panic!("Compiled binary too large.")
+        }
         self.ram.fill(BOOT_ADDR as u8, boot_content);
         self.cpu.reg_mar = BOOT_ADDR as u8;
         self.cpu.reg_iar = self.cpu.reg_mar;

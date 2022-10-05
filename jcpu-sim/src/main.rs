@@ -257,6 +257,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                     color = Color::Green;
                 } else if i == (sim.mb.cpu.reg_iar as usize) {
                     color = Color::Yellow;
+                } else if i == (sim.mb.cpu.reg_sp as usize) {
+                    color = Color::Magenta;
                 }
 
                 x.push(Span::styled(format!("{:02x} ", bin_data[i]), Style::default().fg(color)));

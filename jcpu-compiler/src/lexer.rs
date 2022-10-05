@@ -5,7 +5,7 @@ use jcpuinstructions::{Instruction, JumpFlag, Register, JUMP_FLAGS};
 
 use crate::structures::{Token, TokenType};
 
-const MAX_RULES: usize = 13;
+const MAX_RULES: usize = 15;
 
 static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize); MAX_RULES] = [
     ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value),2),
@@ -15,6 +15,8 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize);
     ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier),1),
     ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier),1),
     ("inc", Instruction::INC, Some(TokenType::Identifier), None,1),
+    ("pop", Instruction::POP, Some(TokenType::Identifier), None,1),
+    ("push", Instruction::PUSH, Some(TokenType::Identifier), None,1),
     ("dec", Instruction::DEC, Some(TokenType::Identifier), None,1),
     ("jmpr", Instruction::JMPR, Some(TokenType::LabelDst), None,1),
     ("jmp", Instruction::JMP, Some(TokenType::LabelDst), None,2),
@@ -282,7 +284,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
                 // println!("{:08b}", op.1);
                 bin_operations.push( (op.1.clone() as u8) | (l_register.clone() as u8) << 2 | (r_register.clone() as u8) << 0 );
             },
-            "jmpr" | "dec" | "inc" => {
+            "jmpr" | "dec" | "inc" | "push" | "pop" => {
                 // u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());

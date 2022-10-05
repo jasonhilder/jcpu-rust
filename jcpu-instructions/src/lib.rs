@@ -1,4 +1,3 @@
-
 #[repr(u8)]
 #[derive(Clone, Debug)]
 pub enum JumpFlag {
@@ -67,6 +66,11 @@ pub enum Instruction {
     // e.g. JMPA 0x01 ; jump to address 0x01 if the A flag is set
     JMPIF = 0b01010000,
     CLF   = 0b01100000,
+
+    // PUSH expects a register or a value
+    PUSH = 0b11010000,
+    // POP expects a register to store value from stack
+    POP = 0b11110000,
 
     // HALT
     HLT = 0b01110000

@@ -1,6 +1,6 @@
-use jcpuinstructions::{Instruction, Register, JumpFlag};
+use jcpuinstructions::{Instruction, Register};
 
-use crate::{alu::ALU, ram::Ram, motherboard::BOOT_ADDR};
+use crate::{alu::ALU, ram::Ram, motherboard::{BOOT_ADDR, STACK_ADDR}};
 
 pub struct CPU {
     // just some descriptors because we're fancy like that
@@ -17,6 +17,7 @@ pub struct CPU {
     pub reg_mar: u8,    // memory address register (we should have an MDR but for expediency we won't)
     pub reg_ir: u8,     // instruction register, contains the instruction being executed
     pub reg_out: u8,    // a bogus output register
+    pub reg_sp: u8,
     pub alu: ALU,
     pub dbg_msg: String
 }
@@ -36,6 +37,7 @@ impl CPU {
             reg_ir: 0,
             reg_mar: 0,
             reg_out: 0,
+            reg_sp: STACK_ADDR as u8,
             alu: ALU {
                 A: 0,
                 B: 0,
@@ -132,6 +134,11 @@ impl CPU {
                 let res = self.alu.op_dec();
                 self.dbg_msg = format!("Decrementing reg {} to value {}", (reg_a + 1), res);
                 self.set_register(reg_a, res);
+            } else if opcode == Instruction::PUSH as u8 {
+                let val = self.get_register(reg_a);
+                self.dbg_msg = format!("Setting value {} in reg {} to stack", val, (reg_a + 1));
+                ram.write(self.reg_sp, val);
+                self.reg_sp += 1;
             } else {
                 panic!("[cpu] unknown instruction")
             }

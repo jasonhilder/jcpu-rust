@@ -27,14 +27,11 @@ impl Parser {
     }
 
     pub fn parse(&mut self) {
+        let mut bites = self.input.chars().peekable();
 
-        for bite in self.input.chars(){
-
-            println!("BITE: {}", bite);
-
+        while let Some(bite) = bites.next() {
             // increment character pos
             self.pos += 1;
-
             match bite {
                 ',' | ' ' | '\n' | '\r' | '\t' => {
                     if !self.tmp_string.is_empty() {
@@ -58,7 +55,7 @@ impl Parser {
                                 column: self.pos,
                             })
                         }
-                    }                 
+                    }
                 },
                 ':' => { // labels dont get compiled into instructions so we just track the current line
                     if !self.tmp_string.is_empty() {
@@ -85,16 +82,16 @@ impl Parser {
                     });
                 },
                 ';' => {
-                    // " -> skip until -> "
                     while let Some(c) = bites.peek() {
-                        if *c == '\n' {
+                        if *c == '\r' {
                             bites.next();
-                        } else if *c == '\r' {
-                           bites.next(); // skip the next two becasue we have \r\n
-                           bites.next();
-                        } else {
                             break;
                         }
+                        if *c == '\n' {
+                            break;
+                        }
+
+                        bites.next(); // just keep skipping
                     }
                 },
                 _ => self.tmp_string.push(bite)
