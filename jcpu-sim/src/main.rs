@@ -2,10 +2,6 @@
     This file is largly just for UI rendering so that we can see
     what's happening under the hood. All interesting stuff happens in Sim
     and the related XCPU lib
-
-    @TODO
-    for vga buffer use an ascii square &#9632; (write raw ascii to terminal)
-    change color of character
 */
 
 pub mod sim;
@@ -13,7 +9,7 @@ pub mod sim;
 use sim::Sim;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -358,13 +354,18 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
         })?;
 
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => return Ok(()),
-                KeyCode::Char('r') => sim.reset(),
-                KeyCode::Char('c') => {
-                    sim.cycle();
+            match key.modifiers {
+                KeyModifiers::CONTROL => {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('r') => sim.reset(),
+                        KeyCode::Char('c') => {
+                            sim.cycle();
+                        },
+                        _ => println!("[App] Unknown key command: {:?}", key.code),
+                    }
                 },
-                _ => println!("[App] Unknown key command: {:?}", key.code),
+                _ => continue
             }
         }
     }

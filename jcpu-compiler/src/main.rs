@@ -2,55 +2,33 @@ mod structures;
 mod parser;
 mod lexer;
 
-use std::fs;
+use std::{path::Path, fs};
 
 use crate::parser::*;
 
 fn main() {
+    let file_path = std::env::args().nth(1).expect("no file given");
+    let output_path = std::env::args().nth(2);
 
-// let asmbly = r#"
-// DATA R1, 0x00
-// DATA R2, 0xff
-// ST R1, R2
-// LD R1, R1
-// "#;
+    let fp = Path::new(&file_path).canonicalize();
 
-// let asmbly = r#"
-// DATA R1, 0x00
-// INC R1
-// INC R1
-// INC R1c
-// DEC R1
-// DEC R1
-// "#;
+    match fp {
+        Ok(fp) => {
+            let outpath = fp.to_string_lossy().replace("jsm", "img");
+            if let Some(output) = output_path {
+                println!("output: {}", output);
+            }
 
-// let asmbly = r#"
-// STOP:
-// DATA R1, 0x01
-// DATA R2, 0x10
-// JMPZ $STOP
-// "#;
-
-// let asmbly = r#"
-// START:
-//     DATA R1, 2
-//     DATA R2, 2
-//     DATA R4, 2
-//     DATA R3, 1
-// ADDER:
-//     ADD R1, R2
-//     CMP R4, R3
-//     JMPIFZ $END
-//     DEC R4
-//     JMP $ADDER
-// END:
-//     HLT
-// "#;
-
-    let jsm = fs::read_to_string("./main.jsm").expect("should have been able to read the file");
-    let mut parser = Parser::new(&jsm.to_string());
-    parser.parse();
-    //println!("{:?}", parser.labels);
-    println!("{:#?}", parser.tokens);
-    lexer::lex(parser.tokens)
+            let jsm = fs::read_to_string(fp).expect("failed to read file.");
+            let mut parser = Parser::new(&jsm.to_string());
+            parser.parse();
+            lexer::lex(parser.tokens, outpath);
+        },
+        Err(e) => {
+           match e.kind() {
+               std::io::ErrorKind::NotFound => eprint!("Failed to compile: File not found"),
+               _ => eprint!("File path error: {:?}", e.to_string())
+           }
+        }
+    }
 }

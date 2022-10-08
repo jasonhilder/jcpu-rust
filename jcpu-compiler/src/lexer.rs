@@ -79,7 +79,7 @@ fn get_value(token: &Token) -> u8 {
     }
 }
 
-pub fn lex(tokens: Vec<Token>) {
+pub fn lex(tokens: Vec<Token>, output_path: String){
     let mut peekable_tokens = tokens.iter().peekable();
     let mut operations: Vec<(&str, u8, Option<Token>, Option<Token>)> = Vec::new();
     let mut addresses: HashMap<String, usize> = HashMap::new();
@@ -116,7 +116,6 @@ pub fn lex(tokens: Vec<Token>) {
                 if lval is some and rval is none, we expect 1 more token and the corect type
                 if lval is none and rval is some, someone is a fuckign idiot
             */
-
 
             let mut tlval: Option<&Token> = None;
             let mut trval: Option<&Token> = None;
@@ -251,17 +250,16 @@ pub fn lex(tokens: Vec<Token>) {
     }
 
     //run compile function
-    println!("{:#?}", addresses);
-    println!("DEBUG \n {:#?}", debug_ops);
-    compile(operations);
+    // println!("{:#?}", addresses);
+    // println!("DEBUG \n {:#?}", debug_ops);
+    compile(operations, output_path);
     write_debug_file(debug_ops)
 }
 
-// -> Vec<u8>
-fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
+fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>, output_path: String)  {
     let mut bin_operations: Vec<u8> = Vec::new();
 
-    println!("COMPILED OPS: {:#?}", vec);
+    //println!("COMPILED OPS: {:#?}", vec);
 
     for op in vec.iter() {
         //println!("op: {}", op.0);
@@ -306,16 +304,17 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>)  {
     }
 
     //println!("{:?}", bin_operations);
-    for op in &bin_operations {
-        println!("{:08b}", op)
-    }
-    write_file(&mut bin_operations);
+    // for op in &bin_operations {
+    //     println!("{:08b}", op)
+    // }
+    write_file(&mut bin_operations, output_path);
 }
 
 fn write_debug_file(debug_instructions: Vec<String>) {
     fs::write("instructions.d", debug_instructions.join("\n")).expect("Unable to write file");
 }
 
-fn write_file(raw_ops: &mut Vec<u8>) {
-    fs::write("boot.img", raw_ops).expect("Unable to write file");
+fn write_file(raw_ops: &mut Vec<u8>, output_path: String) {
+    fs::write(&output_path, raw_ops).expect("Unable to write file");
+    println!("compile success, output: {}", output_path);
 }

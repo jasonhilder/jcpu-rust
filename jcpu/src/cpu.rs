@@ -18,6 +18,7 @@ pub struct CPU {
     pub reg_ir: u8,     // instruction register, contains the instruction being executed
     pub reg_out: u8,    // a bogus output register
     pub reg_sp: u8,
+    pub reg_int: u8,
     pub alu: ALU,
     pub dbg_msg: String
 }
@@ -37,6 +38,7 @@ impl CPU {
             reg_ir: 0,
             reg_mar: 0,
             reg_out: 0,
+            reg_int: 0,
             reg_sp: STACK_ADDR as u8,
             alu: ALU {
                 A: 0,

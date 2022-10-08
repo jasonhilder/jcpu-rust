@@ -3,25 +3,59 @@ use crate::{ram::Ram, helpers, cpu::CPU};
 const VRAM_SIZE: usize = 8 * 8;
 const VRAM_ADDR: usize = 0x00;
 const BIN_SIZE: usize = 10 * 12;
+const PERIPHERALS: usize = 3; // usize for the additon below, excessive I know...
 pub const BOOT_ADDR: usize = VRAM_ADDR + VRAM_SIZE; // ADDRESS Starts after VGA BUFFER
-pub const STACK_ADDR: usize = BIN_SIZE; // Stack starts after binarY
+pub const STACK_ADDR: usize = BIN_SIZE + PERIPHERALS; // Stack starts after binary size and peripherals
+
+// screen, keyboard, mouse
+pub struct Peripheral {
+    name: String,
+    address: u8,
+}
 
 pub struct Motherboard {
     cycle_i: usize,
     pub cpu: CPU,
     pub ram: Ram,
+    pub peripherals: Vec<Peripheral>,
     bootimg: String,
     instructions: String
 }
+/*
+ * @NOTE Hardware interrupts!
+ * Need to some struct for peripherals
+ * remember to set to false by default
+ * every cycle needs to check if there has been an interrupt
+ *
+ * MB/Bios sets up locations in memory for peripherals
+ * Each peripheral has its own address in memory, a register is triggered with
+ * the number of the peripheral eg. 1 = screen  2 = keyboard 3 = mouse 0 = no int
+ */
 
 // Motherboard boots from bootfile
 // Send cpu instructions to do as cycles
 impl Motherboard {
     pub fn new(bootfile: &str, instructions: &str) -> Motherboard {
+        let p: Vec<Peripheral> = vec![
+            Peripheral{
+                name: String::from("screen"),
+                address: 121
+            },
+            Peripheral{
+                name: String::from("keyboard"),
+                address: 122
+            },
+            Peripheral{
+                name: String::from("mouse"),
+                address: 123
+            }
+        ];
+
         Motherboard {
             cycle_i: 0,
             cpu: CPU::new(),            // new CPU with 3 general purpose registers
             ram: Ram::new(),         // 256 bytes of ram - STYLING!
+            peripherals: p,
             bootimg: bootfile.to_string(),
             instructions: instructions.to_string()
         }
