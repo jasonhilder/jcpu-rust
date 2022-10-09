@@ -13,6 +13,7 @@ pub struct Peripheral {
     address: u8,
 }
 
+
 pub struct Motherboard {
     cycle_i: usize,
     pub cpu: CPU,
