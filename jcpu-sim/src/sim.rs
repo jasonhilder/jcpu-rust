@@ -46,6 +46,9 @@ impl Sim {
         self.mb.boot();
     }
     pub fn cycle(&mut self) -> bool {
+        for peripheral in self.mb.peripherals {
+            peripheral.process(&mut self.ram);
+        }
         self.mb.cycle()
     }
     pub fn reset(&mut self) {
