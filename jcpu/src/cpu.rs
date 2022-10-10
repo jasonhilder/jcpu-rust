@@ -20,7 +20,8 @@ pub struct CPU {
     pub reg_sp: u8,
     pub reg_int: u8,
     pub alu: ALU,
-    pub dbg_msg: String
+    pub dbg_msg: String,
+    pub interupt_enabled: bool
 }
 
 impl CPU {
@@ -57,7 +58,8 @@ impl CPU {
                 C: 0,          // Carry flag
                 S: 0,          // Sign flag
             },
-            dbg_msg: String::from("CPU started")
+            dbg_msg: String::from("CPU started"),
+            interupt_enabled: false
         }
     }
 
