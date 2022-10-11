@@ -72,6 +72,9 @@ pub enum Instruction {
     // POP expects a register to store value from stack
     POP = 0b11110000,
 
+    INT = 0b00011000,
+    CLI = 0b00111000,
+
     // HALT
     HLT = 0b01110000
 }

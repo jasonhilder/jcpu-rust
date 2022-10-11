@@ -9,11 +9,11 @@ For each cycle of the motherboard, it executes a cycle on the CPU.
 
 */
 
-pub struct Sim {
-    pub mb: Motherboard,
+pub struct Sim<'a> {
+    pub mb: Motherboard<'a>,
 }
 
-impl Sim {
+impl<'a> Sim<'a> {
     pub fn new() -> Self {
         Self {
             // our board and CPU are 8 bits and we want to reserve 10 bytes of ram for ourselves
@@ -46,9 +46,6 @@ impl Sim {
         self.mb.boot();
     }
     pub fn cycle(&mut self) -> bool {
-        for peripheral in self.mb.peripherals {
-            peripheral.process(&mut self.ram);
-        }
         self.mb.cycle()
     }
     pub fn reset(&mut self) {

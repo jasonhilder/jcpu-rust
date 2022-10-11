@@ -6,6 +6,7 @@
 
 pub mod sim;
 
+use jcpu::motherboard::Keyboard;
 use sim::Sim;
 
 use crossterm::{
@@ -57,8 +58,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
-    let mut sim: Sim = Sim::new();
+    // create peripherals
+    let kb = Keyboard {pressed_state:false, keycode: None};
 
+    let mut sim: Sim = Sim::new();
+    sim.mb.add_peripheral(&kb);
     sim.start();
 
     loop {
@@ -353,6 +357,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             f.render_widget(paragraph, instruction_container[0]);
         })?;
 
+        sim.mb.process_peripherals();
+        
         if let Event::Key(key) = event::read()? {
             match key.modifiers {
                 KeyModifiers::CONTROL => {

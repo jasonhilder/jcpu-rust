@@ -5,8 +5,9 @@ use jcpuinstructions::{Instruction, JumpFlag, Register, JUMP_FLAGS};
 
 use crate::structures::{Token, TokenType};
 
-const MAX_RULES: usize = 15;
+const MAX_RULES: usize = 17;
 
+//@TODO make l/r values vectors of options to have more options per token
 static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize); MAX_RULES] = [
     ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value),2),
     ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Identifier),2),
@@ -19,8 +20,10 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize);
     ("push", Instruction::PUSH, Some(TokenType::Identifier), None,1),
     ("dec", Instruction::DEC, Some(TokenType::Identifier), None,1),
     ("jmpr", Instruction::JMPR, Some(TokenType::LabelDst), None,1),
+    ("int", Instruction::INT, Some(TokenType::Value), None,2),
     ("jmp", Instruction::JMP, Some(TokenType::LabelDst), None,2),
     ("jmpif", Instruction::JMPIF, Some(TokenType::LabelDst), None,2),
+    ("cli", Instruction::CLI, None, None,1),
     ("clf", Instruction::CLF, None, None,1),
     ("hlt", Instruction::HLT, None, None,1)
 ];
@@ -289,14 +292,14 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>, output_path: Stri
                 bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 );
             },
             // "jmp"
-            "jmpif" | "jmp" => {
+            "jmpif" | "jmp" | "int" => {
                 let l_value = get_value(op.2.as_ref().unwrap());
 
                 bin_operations.push(op.1.clone());
                 bin_operations.push(l_value as u8);
                 // jmpif 0x04
             },
-            "clf" | "hlt" => {
+            "clf" | "hlt" | "cli" => {
                 bin_operations.push(op.1.clone());
             },
             _ => todo!()

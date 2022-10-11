@@ -223,6 +223,10 @@ impl CPU {
                     self.dbg_msg = String::from("Jump if check failed");
                     self.reg_iar += 1;
                 }
+            } else if opcode == Instruction::CLI as u8 {
+                self.interupt_enabled = true;
+            } else if opcode == Instruction::CLI as u8 {
+                self.interupt_enabled = false;
             } else if opcode == Instruction::HLT as u8 {
                 return false
             } else {

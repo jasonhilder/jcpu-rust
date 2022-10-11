@@ -7,58 +7,73 @@ const PERIPHERALS: usize = 3; // usize for the additon below, excessive I know..
 pub const BOOT_ADDR: usize = VRAM_ADDR + VRAM_SIZE; // ADDRESS Starts after VGA BUFFER
 pub const STACK_ADDR: usize = BIN_SIZE + PERIPHERALS; // Stack starts after binary size and peripherals
 
-// screen, keyboard, mouse
-pub struct Peripheral {
-    name: String,
-    address: u8,
+pub trait Peripheral {
+    fn create(&mut self);
+    fn process(&self, cpu: &mut CPU) {}
+    fn postprocess(&mut self);
 }
 
+pub struct Keyboard {
+    pub pressed_state: bool,
+    pub keycode: Option<u8>,
+}
 
-pub struct Motherboard {
+impl Peripheral for Keyboard {
+    // Return instance of keyboard which
+    // can be refered to as a Peripheral
+    fn create(&mut self)  {
+        // Keyboard { pressed_state: false, keycode: None }
+        // @FIXME: we want to establish any buffer defaults etc. here, not actually create the peripheral 
+    }
+    fn postprocess(&mut self) {
+        // do any clears updates to internal buffers here    
+        self.keycode = None; // testing mutability
+    }
+
+    fn process(&self, cpu: &mut CPU) {
+        // get keycode here
+        // 1 byte code value  1 byte state
+        if cpu.interupt_enabled {
+            // send the keycode
+           cpu.dbg_msg = String::from("Keyboard key pressed!");
+        }
+
+        self.postprocess();
+    }
+}
+// struct<'a> Motherboard<'a> {
+//     peripherals: Vec<&dyn Peripheral<'a>>,
+// }
+pub struct Motherboard<'a> {
     cycle_i: usize,
     pub cpu: CPU,
     pub ram: Ram,
-    pub peripherals: Vec<Peripheral>,
+    pub peripherals: Vec<&'a dyn Peripheral>,
     bootimg: String,
     instructions: String
 }
-/*
- * @NOTE Hardware interrupts!
- * Need to some struct for peripherals
- * remember to set to false by default
- * every cycle needs to check if there has been an interrupt
- *
- * MB/Bios sets up locations in memory for peripherals
- * Each peripheral has its own address in memory, a register is triggered with
- * the number of the peripheral eg. 1 = screen  2 = keyboard 3 = mouse 0 = no int
- */
-
+ 
 // Motherboard boots from bootfile
 // Send cpu instructions to do as cycles
-impl Motherboard {
-    pub fn new(bootfile: &str, instructions: &str) -> Motherboard {
-        let p: Vec<Peripheral> = vec![
-            Peripheral{
-                name: String::from("screen"),
-                address: 121
-            },
-            Peripheral{
-                name: String::from("keyboard"),
-                address: 122
-            },
-            Peripheral{
-                name: String::from("mouse"),
-                address: 123
-            }
-        ];
-
+impl<'a> Motherboard<'a> {
+    pub fn new(bootfile: &'a str, instructions: &'a str) -> Motherboard<'a> { 
         Motherboard {
             cycle_i: 0,
             cpu: CPU::new(),            // new CPU with 3 general purpose registers
             ram: Ram::new(),         // 256 bytes of ram - STYLING!
-            peripherals: p,
+            peripherals: Vec::new(),
             bootimg: bootfile.to_string(),
             instructions: instructions.to_string()
+        }
+    }
+    pub fn add_peripheral(&mut self, p: &'a impl Peripheral) {
+        self.peripherals.push(p);
+    }
+
+    pub fn process_peripherals(&mut self) {
+        
+        for peripheral in &self.peripherals {
+            peripheral.process(&mut self.cpu);
         }
     }
 
@@ -80,15 +95,17 @@ impl Motherboard {
 
     // if false stop cpu
     pub fn cycle(&mut self) -> bool {
-        self.cpu.reg_mar = self.cpu.reg_iar;
-        self.cpu.reg_ir = self.ram.read(self.cpu.reg_mar);
+        if !self.cpu.interupt_enabled {
+            self.cpu.reg_mar = self.cpu.reg_iar;
+            self.cpu.reg_ir = self.ram.read(self.cpu.reg_mar);
 
-        if !self.cpu.cycle(&mut self.ram) {
-            return false;
+            if !self.cpu.cycle(&mut self.ram) {
+                return false;
+            }
+
+            self.cpu.reg_mar += 1;
+            self.cycle_i += 1;
         }
-
-        self.cpu.reg_mar += 1;
-        self.cycle_i += 1;
 
         true
     }
@@ -156,3 +173,44 @@ impl Motherboard {
         self.boot()
     }
 }
+/*
+
+cycle 0:
+    PUSH R1
+    INT 1
+
+
+    ..
+    POP R1
+    // cpu.interrupt_enable = true
+cycle 1:
+    // if cpu.interrupt_enable {
+        self.cpu.reg_1 =
+    }
+
+    R1 -> holds the key pressed or released and the state of the key
+
+
+struct GPU {
+    buffer: Vec<u8>
+}
+impl Peripheral for GPU {
+    fn create() {
+        // init buffers etc. and set your states here
+    }
+
+    fn process(&mut self, &mut ram: Ram );
+        if cpu.interrupt_enabled {
+            //
+            keystate: u8;
+
+
+            event {
+                keys[getKeycode()] = keystate | getKeyCode();
+            }
+
+            cpu.reg_1 = key;
+        }
+    }
+}
+*/
