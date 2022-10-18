@@ -59,8 +59,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
     // create peripherals
-    let mut kb = Keyboard {pressed_state:false, keycode: None, active: false, keys_pressed: vec![]};
-    let mut screen = Screen {active: false};
+    let mut kb = Keyboard {keys_pressed: vec![]};
+    let mut screen = Screen {buffer: [0; 64]};
 
     let mut sim: Sim = Sim::new();
     sim.mb.add_peripheral(&mut screen);
@@ -370,7 +370,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                             match btn {
                                 MouseButton::Middle => return Ok(()),
                                 MouseButton::Right => sim.reset(),
-                                MouseButton::Left => { sim.cycle(); }
+                                MouseButton::Left => {
+                                    sim.cycle();
+                                    if sim.mb.cpu.clearing {
+                                        sim.mb.reset_peripherals()
+                                    }
+                                }
                             }
                         }
                         _ => {}
@@ -389,11 +394,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                             sim.mb.pass_to_peripheral(ascii_c)
                         }, // pass to peripheral
                         //
-                        _ => {
-                            if sim.mb.cpu.interupt_enabled {
-                                sim.mb.ram.write(1, 2)
-                            }
-                        }
+                        _ => { }
                     }
                 }
                 _ => {}

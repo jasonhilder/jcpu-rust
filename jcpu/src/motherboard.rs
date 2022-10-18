@@ -1,10 +1,11 @@
 use crate::{ram::Ram, helpers, cpu::CPU, peripheral::Peripheral};
 
+pub const KEYBOARD_ADDRESS: u8 = 0;
 pub const KEYBOARD_RAM: u8 = 10;
 pub const GPU_RAM: u8 = 3;
 const RESERVED_RAM: u8 = 2;
 const BIN_SIZE: usize = 10 * 12;
-const PERIPHERALS: usize = (KEYBOARD_RAM + GPU_RAM + RESERVED_RAM) as usize;
+const PERIPHERALS: usize = (KEYBOARD_ADDRESS + KEYBOARD_RAM + GPU_RAM + RESERVED_RAM) as usize;
 pub const BOOT_ADDR: usize = PERIPHERALS; // ADDRESS Starts after PERIPHERALS
 pub const STACK_ADDR: usize = BIN_SIZE + PERIPHERALS; // Stack starts after binary size and peripherals
 
@@ -46,6 +47,13 @@ impl<'a> Motherboard<'a> {
         }
     }
 
+    pub fn reset_peripherals(&mut self) {
+        for peripheral in self.peripherals.iter_mut() {
+            peripheral.clear_state();
+        }
+        self.cpu.clearing = false;
+    }
+
     pub fn ram_info(&self) -> &[u8] {
         &self.ram.memory
     }
@@ -64,17 +72,15 @@ impl<'a> Motherboard<'a> {
 
     // if false stop cpu
     pub fn cycle(&mut self) -> bool {
-        if !self.cpu.interupt_enabled {
-            self.cpu.reg_mar = self.cpu.reg_iar;
-            self.cpu.reg_ir = self.ram.read(self.cpu.reg_mar);
+        self.cpu.reg_mar = self.cpu.reg_iar;
+        self.cpu.reg_ir = self.ram.read(self.cpu.reg_mar);
 
-            if !self.cpu.cycle(&mut self.ram) {
-                return false;
-            }
-
-            self.cpu.reg_mar += 1;
-            self.cycle_i += 1;
+        if !self.cpu.cycle(&mut self.ram) {
+            return false;
         }
+
+        self.cpu.reg_mar += 1;
+        self.cycle_i += 1;
 
         true
     }
@@ -104,7 +110,7 @@ impl<'a> Motherboard<'a> {
             ("Register OUT ".to_string(), format!("{:02x}",self.cpu.reg_out)),
             ("Register SP ".to_string(), format!("{:02x}",self.cpu.reg_sp)),
             ("Register INT ".to_string(), format!("{:02x}",self.cpu.reg_int)),
-            ("Interupted".to_string(), format!("{}",self.cpu.interupt_enabled)),
+            ("Clearing CLI".to_string(), format!("{}",self.cpu.clearing)),
         ]
     }
 
@@ -148,44 +154,3 @@ impl<'a> Motherboard<'a> {
         self.boot()
     }
 }
-/*
-
-cycle 0:
-    PUSH R1
-    INT 1
-
-
-    ..
-    POP R1
-    // cpu.interrupt_enable = true
-cycle 1:
-    // if cpu.interrupt_enable {
-        self.cpu.reg_1 =
-    }
-
-    R1 -> holds the key pressed or released and the state of the key
-
-
-struct GPU {
-    buffer: Vec<u8>
-}
-impl Peripheral for GPU {
-    fn create() {
-        // init buffers etc. and set your states here
-    }
-
-    fn process(&mut self, &mut ram: Ram );
-        if cpu.interrupt_enabled {
-            //
-            keystate: u8;
-
-
-            event {
-                keys[getKeycode()] = keystate | getKeyCode();
-            }
-
-            cpu.reg_1 = key;
-        }
-    }
-}
-*/

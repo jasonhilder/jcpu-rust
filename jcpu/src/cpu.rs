@@ -21,7 +21,7 @@ pub struct CPU {
     pub reg_int: u8,
     pub alu: ALU,
     pub dbg_msg: String,
-    pub interupt_enabled: bool
+    pub clearing: bool,
 }
 
 impl CPU {
@@ -59,7 +59,7 @@ impl CPU {
                 S: 0,          // Sign flag
             },
             dbg_msg: String::from("CPU started"),
-            interupt_enabled: false
+            clearing: false
         }
     }
 
@@ -71,6 +71,7 @@ impl CPU {
         self.reg_mar = 0;
         self.reg_ir = 0;
         self.reg_out = 0;
+        self.reg_int = 0;
         self.alu.A =  0;
         self.alu.B = 0;
 
@@ -86,7 +87,8 @@ impl CPU {
         self.alu.Zero = false;
         self.alu.C = 0;
         self.alu.S = 0;
-        self.dbg_msg = String::from("CPU Reset")
+        self.dbg_msg = String::from("CPU Reset");
+        self.clearing = false;
     }
 
     pub fn cycle(&mut self, ram: &mut Ram) -> bool {
@@ -101,24 +103,23 @@ impl CPU {
             // check for non packed instructions
             if instruction == Instruction::INT as u8 {
                 self.dbg_msg = String::from("interrupt found");
-                self.interupt_enabled = true;
-                /*
-                * When the assembly has INT 0, it enables
-                * interupt_enabled, but then how do I escape
-                * the interupt. I can do a JMPE on the register
-                * but if it doesn't go to the next instruction
-                * it will never get to the conditional.
-                */
-                // Get peripheral index from reg_a
-                // Set peripheral as active so the process fn triggers
 
                 self.reg_mar += 1;
-                self.set_register(self.reg_int, ram.read(self.reg_mar));
-                self.reg_iar += 1;
+
+                self.reg_int = ram.read(self.reg_mar);
+
+                self.reg_iar += 1
             } else if instruction == Instruction::CLI as u8 {
-                self.interupt_enabled = false;
+                self.dbg_msg = String::from("CLI TIME");
+
+                self.clearing = true;
+
+                self.reg_int = 0
             } else if instruction == Instruction::HLT as u8 {
+                self.dbg_msg = String::from("halting");
                 return false
+            } else {
+                self.dbg_msg = format!("instruction found! {}", instruction);
             }
 
             // opcode first 4 bits

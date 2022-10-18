@@ -1,5 +1,6 @@
-use crate::{cpu::CPU, ram::Ram, motherboard::KEYBOARD_RAM};
+use crate::{cpu::CPU, ram::Ram, motherboard::KEYBOARD_ADDRESS};
 
+//@NOTE: PERIPHERAL ORDER, 1 = screen, 2 = keyboard, 3 = not used
 pub trait Peripheral {
     fn create(&mut self);
     fn clear_state(&mut self);
@@ -9,13 +10,11 @@ pub trait Peripheral {
 
 const MAX_BUFFERED_KEYS: u8 = 10;
 pub struct Keyboard {
-    pub pressed_state: bool,
     pub keys_pressed: Vec<u8>,
-    pub keycode: Option<u8>,
-    pub active: bool
 }
 
 pub fn get_key_code(c: char) -> u8 {
+    //let a = c as u8 - 32;
     match c {
         'a' => 65,
         'b' => 66,
@@ -60,10 +59,11 @@ impl Peripheral for Keyboard {
         // get keycode here
         // 1 byte code value  1 byte state
 
-        if cpu.interupt_enabled {
+        if cpu.reg_int > 0 && cpu.reg_int == 2 {
             if self.keys_pressed.len() > 0 {
                 // R1 <- store the address that we're dumping the key pressed into in RAM
                 // R2 <- store the number of key presses that we're dumping into ram
+
                 let mut keyboard_add:u8 = 0;
 
                 for i in 0..self.keys_pressed.len() {
@@ -71,36 +71,28 @@ impl Peripheral for Keyboard {
                     keyboard_add += 1
                 }
 
-                cpu.reg_1 = keyboard_add;
+                cpu.reg_1 = KEYBOARD_ADDRESS;
                 cpu.reg_2 = self.keys_pressed.len() as u8;
             }
-
-            // still not too sure about how to proceed ops
-            cpu.interupt_enabled = false;
         }
 
     }
 
     fn update(&mut self, value:u8) {
         // if backspace remove
-        if value == 19 {
-            self.keys_pressed.pop();
-        } else if self.keys_pressed.len() < MAX_BUFFERED_KEYS.into() {
+        if self.keys_pressed.len() < MAX_BUFFERED_KEYS.into() {
             self.keys_pressed.push(value);
         }
     }
 
     fn clear_state(&mut self) {
-        // Clear the state to the default
-        // WHEN CPU is CLI (clear interrrupts)
         // @TODO: rememebr to clear the keyboard ram of keys
+        self.keys_pressed = vec![];
     }
 }
 
 pub struct Screen {
-    pub buffer: Vec<u8>,
-    pub active: bool
-    // buffer?
+    pub buffer: [u8; 64],
 }
 
 impl Peripheral for Screen {
@@ -109,7 +101,7 @@ impl Peripheral for Screen {
     }
 
     fn process(&mut self, cpu: &mut CPU, ram: &mut Ram) {
-        if cpu.interupt_enabled {
+        if cpu.reg_int > 0 && cpu.reg_int == 1 {
             // get x
             let x = cpu.reg_1;
             // get y
