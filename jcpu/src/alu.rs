@@ -6,14 +6,12 @@ pub struct ALU {
     pub A: u8,
     pub B: u8,
 
-
     pub Or: u8,
     pub And: u8,
     pub Not: u8,
     pub Shl: u8,
     pub Shr: u8,
     pub Sum: u8,
-
 
     pub Lt: bool,
     pub Eq: bool,
@@ -116,5 +114,4 @@ impl ALU {
 
         false
     }
-
 }

@@ -20,6 +20,7 @@ static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize);
     ("push", Instruction::PUSH, Some(TokenType::Identifier), None,1),
     ("dec", Instruction::DEC, Some(TokenType::Identifier), None,1),
     ("jmpr", Instruction::JMPR, Some(TokenType::LabelDst), None,1),
+
     ("int", Instruction::INT, Some(TokenType::Value), None,2),
     ("jmp", Instruction::JMP, Some(TokenType::LabelDst), None,2),
     ("jmpif", Instruction::JMPIF, Some(TokenType::LabelDst), None,2),
@@ -93,7 +94,7 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
     // a list of addresses from the labels
     for tok in &tokens {
         if tok.ttype == TokenType::LabelSrc {
-            addresses.insert(tok.tvalue.clone(), op_address);   
+            addresses.insert(tok.tvalue.clone(), op_address);
         } else if let Some(op) = rule_for_op(tok.tvalue.as_str()) {
             // we only increment if we are an op and not a label src or another type of token
             // we also increment the number of op size in bytes.
@@ -307,9 +308,9 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>, output_path: Stri
     }
 
     //println!("{:?}", bin_operations);
-    // for op in &bin_operations {
-    //     println!("{:08b}", op)
-    // }
+    for op in &bin_operations {
+        println!("{:08b}", op)
+    }
     write_file(&mut bin_operations, output_path);
 }
 

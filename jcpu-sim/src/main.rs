@@ -6,16 +6,16 @@
 
 pub mod sim;
 
-use jcpu::motherboard::Keyboard;
+use jcpu::peripheral::{Keyboard, Screen, get_key_code};
 use sim::Sim;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
+    event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, read, poll, MouseEventKind, MouseButton},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 // use xcpu::cpu::register;
-use std::{error::Error, io};
+use std::{error::Error, io, time::Duration};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
@@ -59,10 +59,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
     // create peripherals
-    let kb = Keyboard {pressed_state:false, keycode: None};
+    let mut kb = Keyboard {pressed_state:false, keycode: None, active: false, keys_pressed: vec![]};
+    let mut screen = Screen {active: false};
 
     let mut sim: Sim = Sim::new();
-    sim.mb.add_peripheral(&kb);
+    sim.mb.add_peripheral(&mut screen);
+    sim.mb.add_peripheral(&mut kb);
     sim.start();
 
     loop {
@@ -333,7 +335,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             // Bottom Debug bar
 
 
-            // -----------------------------------------------------------------
+            // --------------------------------- --------------------------------
             // Instructions block
             let instruction_block = Block::default().title("CPU INSTRUCTIONS").borders(Borders::ALL);
 
@@ -342,7 +344,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 let address = d.split(":").collect::<Vec<&str>>();
                 let mut color = Color::White;
 
-                if address[0].parse::<usize>().unwrap() == sim.mb.cpu.reg_iar as usize - 64 {
+                // 15 is the peripheral ram
+                if address[0].parse::<usize>().unwrap() == sim.mb.cpu.reg_iar as usize - 15 {
                     color = Color::Cyan;
                 }
 
@@ -358,20 +361,42 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
         })?;
 
         sim.mb.process_peripherals();
-        
-        if let Event::Key(key) = event::read()? {
-            match key.modifiers {
-                KeyModifiers::CONTROL => {
-                    match key.code {
-                        KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Char('r') => sim.reset(),
-                        KeyCode::Char('c') => {
-                            sim.cycle();
-                        },
-                        _ => println!("[App] Unknown key command: {:?}", key.code),
+
+        if poll(Duration::from_millis(16)).unwrap() {
+            match read().unwrap() {
+                Event::Mouse(me) => {
+                    match me.kind {
+                        MouseEventKind::Down(btn) => {
+                            match btn {
+                                MouseButton::Middle => return Ok(()),
+                                MouseButton::Right => sim.reset(),
+                                MouseButton::Left => { sim.cycle(); }
+                            }
+                        }
+                        _ => {}
                     }
                 },
-                _ => continue
+                Event::Key(key)  => {
+                    // send any key presses to the peripherals
+                    // write the keycode pressed to ram
+                    match key.code {
+                        KeyCode::Backspace => sim.mb.pass_to_peripheral(19), //9
+                        KeyCode::Enter => sim.mb.pass_to_peripheral(13), //13
+                        KeyCode::Esc => sim.mb.pass_to_peripheral(46), // 46
+                        KeyCode::Char(c) => {
+                            // get key code ascii
+                            let ascii_c = get_key_code(c);
+                            sim.mb.pass_to_peripheral(ascii_c)
+                        }, // pass to peripheral
+                        //
+                        _ => {
+                            if sim.mb.cpu.interupt_enabled {
+                                sim.mb.ram.write(1, 2)
+                            }
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }

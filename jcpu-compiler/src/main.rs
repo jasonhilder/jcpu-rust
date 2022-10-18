@@ -14,7 +14,7 @@ fn main() {
 
     match fp {
         Ok(fp) => {
-            let outpath = fp.to_string_lossy().replace("jsm", "img");
+            let outpath = String::from("boot.img");
             if let Some(output) = output_path {
                 println!("output: {}", output);
             }

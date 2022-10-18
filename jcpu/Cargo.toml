@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 jcpuinstructions = { path = "../jcpu-instructions" }
+
+crossterm = { version = "0.25.0", event-stream = true }

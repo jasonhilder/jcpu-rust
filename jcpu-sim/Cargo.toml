@@ -10,5 +10,5 @@ jcpu = { path = "../jcpu" }
 jcpuinstructions = { path = "../jcpu-instructions" }
 
 tui = "0.18"
-crossterm = "0.23"
+crossterm = "0.25"
 colored = "2.0.0"

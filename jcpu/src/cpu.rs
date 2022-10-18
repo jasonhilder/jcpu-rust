@@ -90,84 +90,39 @@ impl CPU {
     }
 
     pub fn cycle(&mut self, ram: &mut Ram) -> bool {
-
         let instruction = self.reg_ir;
 
-        // opcode first 4 bits
-        let opcode = instruction & 0xF0;
-
-/*
-        1. Add a CMP op to the ALU (compiler and sim) - i.e. op_cmp
-        2. the cmp will take two registers and compare them for:
-            this op basically does: a - b WITHJOUT setting any registers, JUST the flags
-            This is so that we can do: cmp rega, regb and then jump if any of the CPU conditions aare set (not mutative)
-        3. add labels to the lexer/parser/compiler that:
-            3.1 stores the address (offset in the operations index) of that label
-            3.2 when, at any point in the code, we reference a [identifier], then we need to lookup the address tabel and return that value
-
-            e.g. if we do:
-                ADD R1, R2
-
-                JMP [print] <-- Here this is compiled as: JMP 0x2
-
-                print:
-                OUT R2
- */
-        // alu
-        if (instruction >> 7) == 0b1 {
-            let reg_a = (instruction & 0x0C) >> 2;
-            let reg_b = instruction & 0x03;
-
-            self.alu.set_a(self.get_register(reg_a));
-            self.alu.set_b(self.get_register(reg_b));
-
-            if opcode == Instruction::ADD as u8 {
-                let res = self.alu.op_add();
-                self.dbg_msg = format!("Adding reg A and reg B, setting result {} to reg B", {res});
-                self.set_register(reg_b, res)
-            } else if opcode == Instruction::SUB as u8 {
-                let res = self.alu.op_sub();
-                self.set_register(reg_b, res)
-            } else if opcode == Instruction::CMP as u8 {
-                self.dbg_msg = String::from("Comparing reg A and reg B");
-                self.alu.A = self.alu.op_sub();
-            } else if opcode == Instruction::INC as u8 {
-                let res = self.alu.op_inc();
-                self.set_register(reg_a, res);
-            } else if opcode == Instruction::DEC as u8 {
-                let res = self.alu.op_dec();
-                self.dbg_msg = format!("Decrementing reg {} to value {}", (reg_a + 1), res);
-                self.set_register(reg_a, res);
-            } else if opcode == Instruction::PUSH as u8 {
-                // SP is after the BIN_SIZE so on boot we plus 1
-                // @TODO check for register value or literal value
-                if self.reg_sp == 255 {
-                   panic!("Stack limit reached!")
-                } else {
-                    self.reg_sp += 1;
-                    let val = self.get_register(reg_a);
-                    self.dbg_msg = format!("Setting value {} in reg {} to stack", val, (reg_a + 1));
-                    ram.write(self.reg_sp, val)
-                }
-            } else if opcode == Instruction::POP as u8 {
-                let val = ram.read(self.reg_sp);
-                self.dbg_msg = format!("Popping value {} in stack to register {}", val, (reg_a + 1));
-                self.set_register(reg_a, val);
-                self.reg_sp -= 1
-            } else {
-                panic!("[cpu] unknown instruction")
-            }
-
-            self.alu.flags();
-
-            self.reg_iar += 1;
-
-        } else {
+        // non alu instructions
+        if (instruction >> 7) == 0b0 {
             let reg_a = (instruction & 0x0C) >> 2;
             let reg_b = instruction & 0x03;
             let flags = instruction & 0b00001111;
 
+            // check for non packed instructions
+            if instruction == Instruction::INT as u8 {
+                self.dbg_msg = String::from("interrupt found");
+                self.interupt_enabled = true;
+                /*
+                * When the assembly has INT 0, it enables
+                * interupt_enabled, but then how do I escape
+                * the interupt. I can do a JMPE on the register
+                * but if it doesn't go to the next instruction
+                * it will never get to the conditional.
+                */
+                // Get peripheral index from reg_a
+                // Set peripheral as active so the process fn triggers
 
+                self.reg_mar += 1;
+                self.set_register(self.reg_int, ram.read(self.reg_mar));
+                self.reg_iar += 1;
+            } else if instruction == Instruction::CLI as u8 {
+                self.interupt_enabled = false;
+            } else if instruction == Instruction::HLT as u8 {
+                return false
+            }
+
+            // opcode first 4 bits
+            let opcode = instruction & 0xF0;
             if opcode == Instruction::DATA as u8 {
                 self.reg_mar += 1;
 
@@ -223,16 +178,62 @@ impl CPU {
                     self.dbg_msg = String::from("Jump if check failed");
                     self.reg_iar += 1;
                 }
-            } else if opcode == Instruction::CLI as u8 {
-                self.interupt_enabled = true;
-            } else if opcode == Instruction::CLI as u8 {
-                self.interupt_enabled = false;
-            } else if opcode == Instruction::HLT as u8 {
-                return false
             } else {
                 panic!("[cpu] unknown instruction")
             }
-            //
+
+            self.reg_iar += 1;
+        }
+
+        // alu instructions
+        if (instruction >> 7) == 0b1 {
+            // opcode first 4 bits
+            let opcode = instruction & 0xF0;
+
+            let reg_a = (instruction & 0x0C) >> 2;
+            let reg_b = instruction & 0x03;
+
+            self.alu.set_a(self.get_register(reg_a));
+            self.alu.set_b(self.get_register(reg_b));
+
+            if opcode == Instruction::ADD as u8 {
+                let res = self.alu.op_add();
+                self.dbg_msg = format!("Adding reg A and reg B, setting result {} to reg B", {res});
+                self.set_register(reg_b, res)
+            } else if opcode == Instruction::SUB as u8 {
+                let res = self.alu.op_sub();
+                self.set_register(reg_b, res)
+            } else if opcode == Instruction::CMP as u8 {
+                self.dbg_msg = String::from("Comparing reg A and reg B");
+                self.alu.A = self.alu.op_sub();
+            } else if opcode == Instruction::INC as u8 {
+                let res = self.alu.op_inc();
+                self.set_register(reg_a, res);
+            } else if opcode == Instruction::DEC as u8 {
+                let res = self.alu.op_dec();
+                self.dbg_msg = format!("Decrementing reg {} to value {}", (reg_a + 1), res);
+                self.set_register(reg_a, res);
+            } else if opcode == Instruction::PUSH as u8 {
+                // SP is after the BIN_SIZE so on boot we plus 1
+                // @TODO check for register value or literal value
+                if self.reg_sp == 255 {
+                   panic!("Stack limit reached!")
+                } else {
+                    self.reg_sp += 1;
+                    let val = self.get_register(reg_a);
+                    self.dbg_msg = format!("Setting value {} in reg {} to stack", val, (reg_a + 1));
+                    ram.write(self.reg_sp, val)
+                }
+            } else if opcode == Instruction::POP as u8 {
+                let val = ram.read(self.reg_sp);
+                self.dbg_msg = format!("Popping value {} in stack to register {}", val, (reg_a + 1));
+                self.set_register(reg_a, val);
+                self.reg_sp -= 1
+            } else {
+                panic!("[cpu] unknown instruction")
+            }
+
+            self.alu.flags();
 
             self.reg_iar += 1;
         }
