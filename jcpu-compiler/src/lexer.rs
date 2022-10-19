@@ -8,28 +8,28 @@ use crate::structures::{Token, TokenType};
 const MAX_RULES: usize = 17;
 
 //@TODO make l/r values vectors of options to have more options per token
-static RULES: [(&str, Instruction, Option<TokenType>, Option<TokenType>, usize); MAX_RULES] = [
-    ("data",Instruction::DATA,Some(TokenType::Identifier),Some(TokenType::Value),2),
-    ("ld",Instruction::LD,Some(TokenType::Identifier),Some(TokenType::Identifier),2),
-    ("st",Instruction::ST,Some(TokenType::Identifier),Some(TokenType::Identifier),2),
-    ("add",Instruction::ADD,Some(TokenType::Identifier),Some(TokenType::Identifier),1),
-    ("sub",Instruction::SUB,Some(TokenType::Identifier),Some(TokenType::Identifier),1),
-    ("cmp", Instruction::CMP, Some(TokenType::Identifier), Some(TokenType::Identifier),1),
-    ("inc", Instruction::INC, Some(TokenType::Identifier), None,1),
-    ("pop", Instruction::POP, Some(TokenType::Identifier), None,1),
-    ("push", Instruction::PUSH, Some(TokenType::Identifier), None,1),
-    ("dec", Instruction::DEC, Some(TokenType::Identifier), None,1),
-    ("jmpr", Instruction::JMPR, Some(TokenType::LabelDst), None,1),
+static RULES: [(&str, Instruction, Vec<TokenType>, Vec<TokenType>, usize); MAX_RULES] = [
+    ("data",Instruction::DATA,vec![TokenType::Identifier], vec![TokenType::Value],2),
+    ("ld",Instruction::LD,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
+    ("st",Instruction::ST,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
+    ("add",Instruction::ADD,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
+    ("sub",Instruction::SUB,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
+    ("cmp", Instruction::CMP, vec![TokenType::Identifier], vec![TokenType::Identifier],1),
+    ("inc", Instruction::INC, vec![TokenType::Identifier], vec![],1),
+    ("pop", Instruction::POP, vec![TokenType::Identifier], vec![],1),
+    ("push", Instruction::PUSH, vec![TokenType::Identifier], vec![],1),
+    ("dec", Instruction::DEC, vec![TokenType::Identifier], vec![],1),
+    ("jmpr", Instruction::JMPR, vec![TokenType::LabelDst], vec![],1),
 
-    ("int", Instruction::INT, Some(TokenType::Value), None,2),
-    ("jmp", Instruction::JMP, Some(TokenType::LabelDst), None,2),
-    ("jmpif", Instruction::JMPIF, Some(TokenType::LabelDst), None,2),
-    ("cli", Instruction::CLI, None, None,1),
-    ("clf", Instruction::CLF, None, None,1),
-    ("hlt", Instruction::HLT, None, None,1)
+    ("int", Instruction::INT, vec![TokenType::Value], vec![],2),
+    ("jmp", Instruction::JMP, vec![TokenType::LabelDst], vec![],2),
+    ("jmpif", Instruction::JMPIF, vec![TokenType::LabelDst], vec![],2),
+    ("cli", Instruction::CLI, vec![], vec![],1),
+    ("clf", Instruction::CLF, vec![], vec![],1),
+    ("hlt", Instruction::HLT, vec![], vec![],1)
 ];
 
-fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenType>,usize)> {
+fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usize)> {
     let opname = op.to_string().to_lowercase();
     //println!("op: {}", opname);
 
@@ -38,10 +38,9 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Option<TokenType>, Option<TokenTyp
         if rule.0 == "jmpif" && opname.contains("jmpif") {
             if let Some(flagstr) = opname.split("jmpif").last() {
                 //println!("last: {}", flagstr);
-
                 for (i, flag) in JUMP_FLAGS.iter().enumerate() {
                     if flag == &flagstr.to_lowercase().as_str() {
-                        return Some((rule.0, (Instruction::JMPIF as u8) | i as u8 , rule.2.clone(), None, rule.4));
+                        return Some((rule.0, (Instruction::JMPIF as u8) | i as u8 , rule.2.clone(), vec![], rule.4));
                     }
                 }
 
@@ -108,12 +107,12 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
     while let Some(token) = peekable_tokens.next() {
         // Skip label sources
         if token.ttype == TokenType::LabelSrc {
-        //    // addresses.insert(token.tvalue.clone(), op_address);
+            //addresses.insert(token.tvalue.clone(), op_address);
             debug_ops.push(format!("{}: {}:", op_address, token.tvalue));
             continue;
         }
 
-        if let Some((opname, op, lval, rval, _opsize)) = rule_for_op(token.tvalue.as_str()) {
+        if let Some((opname, op, left_values, right_values, _opsize)) = rule_for_op(token.tvalue.as_str()) {
             /*
                 If lval and rval is_some, then we expect 3 tokens:
                     the lval and correct type, the comma and then rval and correct type
@@ -121,49 +120,55 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
                 if lval is none and rval is some, someone is a fuckign idiot
             */
 
-            let mut tlval: Option<&Token> = None;
-            let mut trval: Option<&Token> = None;
+            let mut left_token_option: Option<&Token> = None;
+            let mut right_token_option: Option<&Token> = None;
 
 
-            if lval.is_some() && rval.is_some() {
-                tlval = peekable_tokens.next();
+            if !left_values.is_empty() && !right_values.is_empty() {
+
+                left_token_option = peekable_tokens.next();
                 let tcomm = peekable_tokens.next();
-                trval = peekable_tokens.next();
+                right_token_option = peekable_tokens.next();
 
                 if tcomm.unwrap().ttype != TokenType::Comma {
                     panic!(
                         "Syntax error comma required to seperate arguments. line: {}, column: {}",
                         token.line,
-                        (token.column + tlval.unwrap().tvalue.len())
+                        (token.column + left_token_option.unwrap().tvalue.len())
                     );
                 }
 
                 // check for register value
-                if let Some(tlval) = tlval {
-                    if let Some(lval) = lval {
+                if let Some(tlval) = left_token_option {
+
+                    if left_values.contains(x)
+
+                    if let Some(lval) = left_values {
                         if tlval.ttype != lval {
                             panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", lval, tlval.ttype, tlval.line, (tlval.column - tlval.tvalue.len() - 1));
                         }
                     }
+
                 }
-                if let Some(trval) = trval {
-                    if let Some(rval) = rval {
+
+                if let Some(trval) = right_token_option {
+                    if let Some(rval) = right_values {
                         if trval.ttype != rval {
                             panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", rval, trval.ttype, trval.line, (trval.column - trval.tvalue.len() - 1));
                         }
                     }
                 }
 
-                let a = tlval.unwrap().clone();
-                let b = trval.unwrap().clone();
+                let a = left_token_option.unwrap().clone();
+                let b = right_token_option.unwrap().clone();
 
                 debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
                 operations.push((opname, op.clone() as u8, Some(a), Some(b)))
-            } else if lval.is_some() && rval.is_none() {
+            } else if left_values.is_some() && right_values.is_none() {
                 let tlval = peekable_tokens.next();
 
                 if let Some(tlval) = tlval {
-                    if let Some(lval) = lval {
+                    if let Some(lval) = left_values {
                         if tlval.ttype != lval {
                             panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", lval, tlval.ttype, tlval.line, (tlval.column - tlval.tvalue.len()));
                         }
@@ -236,10 +241,10 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
                         operations.push((opname, op.clone() as u8, Some(a), None))
                     }
                 }
-            } else if lval.is_none() && rval.is_none() {
+            } else if left_values.is_none() && right_values.is_none() {
                 debug_ops.push(format!("{}: {}", op_address, opname.to_uppercase()));
                 operations.push((opname, op.clone() as u8, None, None))
-            } else if lval.is_none() && rval.is_some() {
+            } else if left_values.is_none() && right_values.is_some() {
                 //panic!("Syntax error left value cannot be nothing, idiot...")
             }
 
