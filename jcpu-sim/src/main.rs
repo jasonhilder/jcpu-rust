@@ -6,7 +6,7 @@
 
 pub mod sim;
 
-use jcpu::peripheral::{Keyboard, Screen, get_key_code};
+use jcpu::{peripheral::{Keyboard, Screen, get_key_code}, motherboard::{SCREEN_WIDTH, SCREEN_HEIGHT}};
 use sim::Sim;
 
 use crossterm::{
@@ -59,8 +59,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
     // create peripherals
+    const SCREEN_SIZE: u8 = SCREEN_WIDTH * SCREEN_HEIGHT;
+    let mut screen = Screen {buffer: [0; SCREEN_SIZE as usize]}; // 8*8
     let mut kb = Keyboard {keys_pressed: vec![]};
-    let mut screen = Screen {buffer: [0; 64]};
 
     let mut sim: Sim = Sim::new();
     sim.mb.add_peripheral(&mut screen);
@@ -81,7 +82,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let info_mb = sim.get_mb_info();
             let info_dbg = sim.get_dbg_info();
             let info_instructions = sim.get_cpu_instructions_text();
-            let info_vga: &[u8] = &info_ram[0..VGA_BUFFER_SIZE];
+            let info_vga = [0..SCREEN_SIZE];
+
 
             // -----------------------------------------------------------------
             // Surrounding block
@@ -146,24 +148,32 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let vga_block = Block::default().title("VGA BUFFER").borders(Borders::ALL);
 
             // ram text input
-            let mut text = vec![];
-            let mut vga_index = 0;
-            for _ in 0..8 {
-                let mut vga_b:Vec <Span> = Vec::new();
-                // info_vga[vga_index]
+            // let mut text = vec![];
+            // let mut vga_index = 0;
+            let mut vga_b:Vec <Span> = Vec::new();
+            for v in &screen.buffer {
+                let c_value = v.clone() as u8;
+                let color = Color::Rgb(c_value, c_value, c_value);
+                vga_b.push(Span::styled(FULL, Style::default().fg(color)));
 
-                for _ in 0..8 {
-                    let value = info_vga[vga_index];
-                    let color = Color::Rgb(value, value, value);
-
-                    vga_b.push(Span::styled(FULL, Style::default().fg(color)));
-                    vga_index += 1;
-                }
-                text.push(Spans::from(vga_b));
             }
-            let v_paragraph = Paragraph::new(text).block(vga_block).alignment(Alignment::Left).wrap(Wrap {trim: false});
-
-            f.render_widget(v_paragraph, cpu_info_blocks[1]);
+            // for _ in 0..8 {
+            //     let mut vga_b:Vec <Span> = Vec::new();
+            //     // info_vga[vga_index]
+            //
+            //     for _ in 0..SCREEN_SIZE {
+            //
+            //         let value = info_vga[vga_index];
+            //         let color = Color::Rgb(value, value, value);
+            //
+            //         vga_b.push(Span::styled(FULL, Style::default().fg(color)));
+            //         vga_index += 1;
+            //     }
+            //     text.push(Spans::from(vga_b));
+            // }
+            // let v_paragraph = Paragraph::new(text).block(vga_block).alignment(Alignment::Left).wrap(Wrap {trim: false});
+            //
+            //f.render_widget(v_paragraph, cpu_info_blocks[1]);
             // -----------------------------------------------------------------
             // Top right inner block
             let table_block = Block::default().title("CPU TABLE").borders(Borders::ALL);
@@ -385,13 +395,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                     // send any key presses to the peripherals
                     // write the keycode pressed to ram
                     match key.code {
-                        KeyCode::Backspace => sim.mb.pass_to_peripheral(19), //9
-                        KeyCode::Enter => sim.mb.pass_to_peripheral(13), //13
-                        KeyCode::Esc => sim.mb.pass_to_peripheral(46), // 46
+                        KeyCode::Backspace => sim.mb.pass_to_peripheral("keyboard", 19), //9
+                        KeyCode::Enter => sim.mb.pass_to_peripheral("keyboard", 13), //13
+                        KeyCode::Esc => sim.mb.pass_to_peripheral("keyboard", 46), // 46
                         KeyCode::Char(c) => {
                             // get key code ascii
                             let ascii_c = get_key_code(c);
-                            sim.mb.pass_to_peripheral(ascii_c)
+                            sim.mb.pass_to_peripheral("keyboard", ascii_c)
                         }, // pass to peripheral
                         //
                         _ => { }

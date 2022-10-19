@@ -67,6 +67,7 @@ impl CPU {
         self.reg_1 = 0;
         self.reg_2 = 0;
         self.reg_3 = 0;
+        self.reg_4 = 0;
         self.reg_iar = 0;
         self.reg_mar = 0;
         self.reg_ir = 0;

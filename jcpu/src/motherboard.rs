@@ -1,5 +1,7 @@
 use crate::{ram::Ram, helpers, cpu::CPU, peripheral::Peripheral};
 
+pub const SCREEN_WIDTH: u8 = 8;
+pub const SCREEN_HEIGHT: u8 = 8;
 pub const KEYBOARD_ADDRESS: u8 = 0;
 pub const KEYBOARD_RAM: u8 = 10;
 pub const GPU_RAM: u8 = 3;
@@ -41,9 +43,11 @@ impl<'a> Motherboard<'a> {
         }
     }
 
-    pub fn pass_to_peripheral(&mut self, value: u8) {
+    pub fn pass_to_peripheral(&mut self, perf: &str, value: u8) {
         for peripheral in self.peripherals.iter_mut() {
-            peripheral.update(value);
+            if peripheral.get_id() == perf {
+                peripheral.update(value);
+            }
         }
     }
 
