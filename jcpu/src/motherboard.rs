@@ -1,4 +1,6 @@
-use crate::{ram::Ram, helpers, cpu::CPU, peripheral::Peripheral};
+use std::collections::HashMap;
+
+use crate::{ram::Ram, helpers, cpu::CPU, peripheral::{Peripheral, PeripheralTrait, Screen, Keyboard}};
 
 pub const SCREEN_WIDTH: u8 = 8;
 pub const SCREEN_HEIGHT: u8 = 8;
@@ -11,50 +13,55 @@ const PERIPHERALS: usize = (KEYBOARD_ADDRESS + KEYBOARD_RAM + GPU_RAM + RESERVED
 pub const BOOT_ADDR: usize = PERIPHERALS; // ADDRESS Starts after PERIPHERALS
 pub const STACK_ADDR: usize = BIN_SIZE + PERIPHERALS; // Stack starts after binary size and peripherals
 
-pub struct Motherboard<'a> {
+pub struct Motherboard {
     cycle_i: usize,
     pub cpu: CPU,
     pub ram: Ram,
-    pub peripherals: Vec<&'a mut dyn Peripheral>,
+    pub peripherals: HashMap<&'static str, Peripheral>,
     bootimg: String,
     instructions: String
 }
 
 // Motherboard boots from bootfile
 // Send cpu instructions to do as cycles
-impl<'a> Motherboard<'a> {
-    pub fn new(bootfile: &'a str, instructions: &'a str) -> Motherboard<'a> {
+impl Motherboard {  
+    pub fn new(bootfile: &str, instructions: &str) -> Motherboard { 
         Motherboard {
             cycle_i: 0,
             cpu: CPU::new(),            // new CPU with 3 general purpose registers
             ram: Ram::new(),         // 256 bytes of ram - STYLING!
-            peripherals: Vec::new(),
+            peripherals: HashMap::new(),
             bootimg: bootfile.to_string(),
             instructions: instructions.to_string()
-        }
+        } 
     }
-    pub fn add_peripheral(&mut self, p: &'a mut impl Peripheral) {
-        self.peripherals.push(p);
-    }
-
+ 
     pub fn process_peripherals(&mut self) {
-        for peripheral in self.peripherals.iter_mut() {
-            peripheral.process(&mut self.cpu, &mut self.ram);
-        }
-    }
-
-    pub fn pass_to_peripheral(&mut self, perf: &str, value: u8) {
-        for peripheral in self.peripherals.iter_mut() {
-            if peripheral.get_id() == perf {
-                peripheral.update(value);
+        for (_, peripheral) in self.peripherals.iter_mut() {
+            match peripheral {
+                Peripheral::Screen(a) => a.process(&mut self.cpu, &mut self.ram),
+                _ => {}
             }
         }
     }
 
+    pub fn pass_to_peripheral(&mut self, perf: &str, value: u8) {
+        for (_, peripheral) in self.peripherals.iter_mut() {
+            match peripheral {
+                Peripheral::Screen(a) => a.update(value),                
+                _ => {}
+            }
+        } 
+    }
+
     pub fn reset_peripherals(&mut self) {
-        for peripheral in self.peripherals.iter_mut() {
-            peripheral.clear_state();
-        }
+        for (_, peripheral) in self.peripherals.iter_mut() {
+            match peripheral {
+                Peripheral::Screen(a) => a.clear_state(),                
+                _ => {}
+            }
+        } 
+
         self.cpu.clearing = false;
     }
 
@@ -95,7 +102,7 @@ impl<'a> Motherboard<'a> {
             ("Arch".to_string(), self.cpu.arch.to_string()),
             ("Bits".to_string(), self.cpu.bits.to_string()),
             ("Registers".to_string(), self.cpu.num_registers.to_string()),
-            ("UI Controls:".to_string(), self.cpu.num_registers.to_string()),
+            ("UI Controls".to_string(), "".to_string()),
             ("Left mouse".to_string(), "Cycle".to_string()),
             ("Right mouse".to_string(), "Reset".to_string()),
             ("Middle mouse".to_string(), "Exit".to_string()),
@@ -140,6 +147,7 @@ impl<'a> Motherboard<'a> {
     }
 
     pub fn boot(&mut self) {
+
         let boot_content = helpers::read_bin_vec(&self.bootimg);
 
         self.cpu.dbg_msg = format!("bin size: {:?}", &boot_content.len());

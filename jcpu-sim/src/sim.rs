@@ -1,4 +1,4 @@
-use jcpu::motherboard::Motherboard;
+use jcpu::{motherboard::Motherboard};
 /*
 
 The basic process here is that we have a motherboard that will power up, reserve some memory for itself (for
@@ -9,11 +9,11 @@ For each cycle of the motherboard, it executes a cycle on the CPU.
 
 */
 
-pub struct Sim<'a> {
-    pub mb: Motherboard<'a>,
+pub struct Sim {
+    pub mb: Motherboard,
 }
 
-impl<'a> Sim<'a> {
+impl Sim {
     pub fn new() -> Self {
         Self {
             // our board and CPU are 8 bits and we want to reserve 10 bytes of ram for ourselves
@@ -26,6 +26,11 @@ impl<'a> Sim<'a> {
     }
     pub fn get_mb_info(&mut self) -> Vec<(String,String)> {
         self.mb.mb_info()
+    }
+    pub fn get_screen_info(&mut self) {
+        for p in self.mb.peripherals.iter() {
+            
+        }
     }
     pub fn get_cpu_details(&mut self) -> Vec<(String,String)> {
         self.mb.cpu_info()

@@ -6,11 +6,11 @@
 
 pub mod sim;
 
-use jcpu::{peripheral::{Keyboard, Screen, get_key_code}, motherboard::{SCREEN_WIDTH, SCREEN_HEIGHT}};
+use jcpu::{peripheral::{Keyboard, Screen, get_key_code, Peripheral}, motherboard::{SCREEN_WIDTH, SCREEN_HEIGHT}};
 use sim::Sim;
 
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, read, poll, MouseEventKind, MouseButton},
+    event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode, read, poll, MouseEventKind, MouseButton},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -26,7 +26,6 @@ use tui::{
 };
 
 pub const FULL: &str = "█";
-const VGA_BUFFER_SIZE: usize = 8 * 8;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -57,15 +56,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
-
     // create peripherals
     const SCREEN_SIZE: u8 = SCREEN_WIDTH * SCREEN_HEIGHT;
-    let mut screen = Screen {buffer: [0; SCREEN_SIZE as usize]}; // 8*8
-    let mut kb = Keyboard {keys_pressed: vec![]};
+    let screen = Screen {buffer: [0; SCREEN_SIZE as usize]};
+    let kb = Keyboard {keys_pressed: vec![]}; 
 
     let mut sim: Sim = Sim::new();
-    sim.mb.add_peripheral(&mut screen);
-    sim.mb.add_peripheral(&mut kb);
+    
+    sim.mb.peripherals.insert("screen", Peripheral::Screen(screen));
+    sim.mb.peripherals.insert("keyboad", Peripheral::Keyboard(kb));
+
     sim.start();
 
     loop {
@@ -82,8 +82,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let info_mb = sim.get_mb_info();
             let info_dbg = sim.get_dbg_info();
             let info_instructions = sim.get_cpu_instructions_text();
-            let info_vga = [0..SCREEN_SIZE];
-
 
             // -----------------------------------------------------------------
             // Surrounding block
@@ -134,7 +132,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             let mut text = Vec::new();
             for d in info_cpu.iter() {
-                text.push(Spans::from(Span::styled(format!("{}: {}", d.0, d.1), Style::default().fg(Color::Red))));
+                if d.0.contains("mouse") || d.0.contains("UI") {
+                    text.push(Spans::from(Span::styled(format!("{}: {}", d.0, d.1), Style::default().fg(Color::White))));
+                } else {
+                    text.push(Spans::from(Span::styled(format!("{}: {}", d.0, d.1), Style::default().fg(Color::Red))));
+                }
             }
 
             let paragraph = Paragraph::new(text)
@@ -146,34 +148,30 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             // VGA BUFFER block
             let vga_block = Block::default().title("VGA BUFFER").borders(Borders::ALL);
+            let mut text = vec![];
 
-            // ram text input
-            // let mut text = vec![];
-            // let mut vga_index = 0;
-            let mut vga_b:Vec <Span> = Vec::new();
-            for v in &screen.buffer {
-                let c_value = v.clone() as u8;
-                let color = Color::Rgb(c_value, c_value, c_value);
-                vga_b.push(Span::styled(FULL, Style::default().fg(color)));
+            // for c in 0..screen.buffer.clone().len() {}
 
+            if let Some(Peripheral::Screen(scr)) = sim.mb.peripherals.get("screen") {
+                // Do buffer stuff here 
+                for h in 0..SCREEN_HEIGHT {
+                    let mut vga_b:Vec <Span> = Vec::new();
+                
+                    for i in 0..SCREEN_WIDTH {
+                        let pos = i + ( SCREEN_HEIGHT * h );
+                        let c_value = scr.buffer[pos as usize];
+                        let color = Color::Rgb(c_value as u8, c_value as u8, c_value as u8);
+                        vga_b.push(Span::styled(FULL, Style::default().fg(color)));
+                    }
+                
+                    text.push(Spans::from(vga_b));
+                }
             }
-            // for _ in 0..8 {
-            //     let mut vga_b:Vec <Span> = Vec::new();
-            //     // info_vga[vga_index]
-            //
-            //     for _ in 0..SCREEN_SIZE {
-            //
-            //         let value = info_vga[vga_index];
-            //         let color = Color::Rgb(value, value, value);
-            //
-            //         vga_b.push(Span::styled(FULL, Style::default().fg(color)));
-            //         vga_index += 1;
-            //     }
-            //     text.push(Spans::from(vga_b));
-            // }
-            // let v_paragraph = Paragraph::new(text).block(vga_block).alignment(Alignment::Left).wrap(Wrap {trim: false});
-            //
-            //f.render_widget(v_paragraph, cpu_info_blocks[1]);
+
+            let v_paragraph = Paragraph::new(text).block(vga_block).alignment(Alignment::Left).wrap(Wrap {trim: false});
+
+            f.render_widget(v_paragraph, cpu_info_blocks[1]);
+
             // -----------------------------------------------------------------
             // Top right inner block
             let table_block = Block::default().title("CPU TABLE").borders(Borders::ALL);
