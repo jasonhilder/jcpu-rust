@@ -104,88 +104,85 @@ impl CPU {
             // check for non packed instructions
             if instruction == Instruction::INT as u8 {
                 self.dbg_msg = String::from("interrupt found");
-
                 self.reg_mar += 1;
 
                 self.reg_int = ram.read(self.reg_mar);
-
-                self.reg_iar += 1
+                self.reg_iar += 1;
             } else if instruction == Instruction::CLI as u8 {
                 self.dbg_msg = String::from("CLI TIME");
 
                 self.clearing = true;
 
-                self.reg_int = 0
+                self.reg_int = 0;
             } else if instruction == Instruction::HLT as u8 {
                 self.dbg_msg = String::from("halting");
-                return false
+                return false;
             } else {
-                self.dbg_msg = format!("instruction found! {}", instruction);
-            }
 
-            // opcode first 4 bits
-            let opcode = instruction & 0xF0;
-            if opcode == Instruction::DATA as u8 {
-                self.reg_mar += 1;
-
-                self.set_register(reg_a, ram.read(self.reg_mar));
-
-                self.dbg_msg = format!("Setting reg {} to value {}", (reg_a + 1), ram.read(self.reg_mar));
-                self.reg_iar += 1;
-            } else if opcode == Instruction::LD as u8 {
-                // set prev to current mar,
-                let prev = self.reg_mar;
-
-                // set mar to regA value,
-                self.reg_mar = self.get_register(reg_a);
-
-                // ld: load memory from ram at regA address into regB
-                self.set_register(reg_b, ram.read(self.reg_mar));
-
-                // set mar back to prev
-                self.reg_mar = prev;
-            } else if opcode == Instruction::ST as u8 {
-                // set prev to current mar,
-                let prev = self.reg_mar;
-
-                // set mar to regA value,
-                self.reg_mar = self.get_register(reg_a);
-
-                // ld: load value* at regB in regA ram location*
-                let register_b = self.get_register(reg_b);
-
-                ram.write(self.reg_mar, register_b);
-
-                // set mar back to prev
-                self.reg_mar = prev;
-            } else if opcode == Instruction::JMP as u8 {
-                self.reg_mar += 1;
-                let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) - 1;
-                self.reg_iar = address; // -1 because end of function increments
-                self.dbg_msg = format!("Jumping to address {}", address);
-
-            } else if opcode == Instruction::JMPR as u8 {
-                self.reg_iar = self.get_register(reg_a);
-
-                self.reg_mar = self.reg_iar;
-            } else if opcode == Instruction::JMPIF as u8 {
-                if self.alu.match_flags(flags) {
-                    self.dbg_msg = String::from("Jump if check passed");
+                // opcode first 4 bits
+                let opcode = instruction & 0xF0;
+                if opcode == Instruction::DATA as u8 {
                     self.reg_mar += 1;
 
-                    self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
+                    self.set_register(reg_a, ram.read(self.reg_mar));
 
-                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
-                }  else {
-                    self.dbg_msg = String::from("Jump if check failed");
+                    self.dbg_msg = format!("Setting reg {} to value {}", (reg_a + 1), ram.read(self.reg_mar));
                     self.reg_iar += 1;
-                }
-            } else {
-                panic!("[cpu] unknown instruction")
-            }
+                } else if opcode == Instruction::LD as u8 {
+                    // set prev to current mar,
+                    let prev = self.reg_mar;
 
+                    // set mar to regA value,
+                    self.reg_mar = self.get_register(reg_a);
+
+                    // ld: load memory from ram at regA address into regB
+                    self.set_register(reg_b, ram.read(self.reg_mar));
+
+                    // set mar back to prev
+                    self.reg_mar = prev;
+                } else if opcode == Instruction::ST as u8 {
+                    // set prev to current mar,
+                    let prev = self.reg_mar;
+
+                    // set mar to regA value,
+                    self.reg_mar = self.get_register(reg_a);
+
+                    // ld: load value* at regB in regA ram location*
+                    let register_b = self.get_register(reg_b);
+
+                    ram.write(self.reg_mar, register_b);
+
+                    // set mar back to prev
+                    self.reg_mar = prev;
+                } else if opcode == Instruction::JMP as u8 {
+                    self.reg_mar += 1;
+                    let address = (BOOT_ADDR) as u8 + ram.read(self.reg_mar) - 1;
+                    self.reg_iar = address; // -1 because end of function increments
+                    self.dbg_msg = format!("Jumping to address {}", address);
+
+                } else if opcode == Instruction::JMPR as u8 {
+                    self.reg_iar = self.get_register(reg_a);
+
+                    self.reg_mar = self.reg_iar;
+                } else if opcode == Instruction::JMPIF as u8 {
+                    if self.alu.match_flags(flags) {
+                        self.dbg_msg = String::from("Jump if check passed");
+                        self.reg_mar += 1;
+
+                        self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
+
+                        self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
+                    }  else {
+                        self.dbg_msg = String::from("Jump if check failed");
+                        self.reg_iar += 1;
+                    }
+                } else {
+                    panic!("[cpu] unknown instruction")
+                }
+            }
             self.reg_iar += 1;
         }
+
 
         // alu instructions
         if (instruction >> 7) == 0b1 {
