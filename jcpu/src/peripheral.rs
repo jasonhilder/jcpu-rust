@@ -5,7 +5,6 @@ const SCREEN_ID: &str = "screen";
 //@NOTE: PERIPHERAL ORDER, 1 = screen, 2 = keyboard, 3 = not used
 
 pub trait PeripheralTrait {
-    fn get_id(&mut self) -> &str;
     fn create(&mut self);
     fn clear_state(&mut self);
     fn process(&mut self, cpu: &mut CPU, ram: &mut Ram) {}
@@ -17,7 +16,6 @@ pub enum Peripheral {
     Keyboard(Keyboard),
 }
 
-
 const MAX_BUFFERED_KEYS: u8 = 10;
 pub struct Keyboard {
     pub keys_pressed: Vec<u8>,
@@ -28,10 +26,6 @@ pub fn get_key_code(c: char) -> u8 {
 }
 
 impl PeripheralTrait for Keyboard {
-    fn get_id(&mut self) -> &str {
-        KEYBOARD_ID
-    }
-
     fn create(&mut self)  {
         // Keyboard { pressed_state: false, keycode: None }
         // @FIXME: we want to establish any buffer defaults etc. here, not actually create the peripheral
@@ -74,10 +68,6 @@ impl Screen {
 }
 
 impl PeripheralTrait for Screen {
-    fn get_id(&mut self) -> &str {
-        KEYBOARD_ID
-    }
-
     fn create(&mut self) {
         //println!("todo")
     }
@@ -91,7 +81,7 @@ impl PeripheralTrait for Screen {
             // get color
             let c = cpu.reg_3;
 
-            let pos = x + (SCREEN_WIDTH * y);
+            let pos = y + (SCREEN_WIDTH * x);
             // add it to the "screen" buffer
             self.buffer[pos as usize] = c;
         }

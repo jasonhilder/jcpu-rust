@@ -5,36 +5,35 @@ use jcpuinstructions::{Instruction, JumpFlag, Register, JUMP_FLAGS};
 
 use crate::structures::{Token, TokenType};
 
-const MAX_RULES: usize = 17;
-
-//@TODO make l/r values vectors of options to have more options per token
-static RULES: [(&str, Instruction, Vec<TokenType>, Vec<TokenType>, usize); MAX_RULES] = [
-    ("data",Instruction::DATA,vec![TokenType::Identifier], vec![TokenType::Value],2),
-    ("ld",Instruction::LD,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
-    ("st",Instruction::ST,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
-    ("add",Instruction::ADD,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
-    ("sub",Instruction::SUB,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
-    ("cmp", Instruction::CMP, vec![TokenType::Identifier], vec![TokenType::Identifier],1),
-    ("inc", Instruction::INC, vec![TokenType::Identifier], vec![],1),
-    ("pop", Instruction::POP, vec![TokenType::Identifier], vec![],1),
-    ("push", Instruction::PUSH, vec![TokenType::Identifier], vec![],1),
-    ("dec", Instruction::DEC, vec![TokenType::Identifier], vec![],1),
-    ("jmpr", Instruction::JMPR, vec![TokenType::LabelDst], vec![],1),
-
-    ("int", Instruction::INT, vec![TokenType::Value], vec![],2),
-    ("jmp", Instruction::JMP, vec![TokenType::LabelDst], vec![],2),
-    ("jmpif", Instruction::JMPIF, vec![TokenType::LabelDst], vec![],2),
-    ("cli", Instruction::CLI, vec![], vec![],1),
-    ("clf", Instruction::CLF, vec![], vec![],1),
-    ("hlt", Instruction::HLT, vec![], vec![],1)
-];
+type OpType = (&'static str, Instruction, Vec<TokenType>, Vec<TokenType>, usize);
 
 fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usize)> {
+    //@TODO make l/r values vectors of options to have more options per token
+    let rules: Vec<OpType> = Vec::from([
+        ("data",Instruction::DATA,vec![TokenType::Identifier], vec![TokenType::Value],2),
+        ("ld",Instruction::LD,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
+        ("st",Instruction::ST,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
+        ("add",Instruction::ADD,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
+        ("sub",Instruction::SUB,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
+        ("cmp", Instruction::CMP, vec![TokenType::Identifier], vec![TokenType::Identifier, TokenType::Value],1),
+        ("inc", Instruction::INC, vec![TokenType::Identifier], vec![],1),
+        ("pop", Instruction::POP, vec![TokenType::Identifier], vec![],1),
+        ("push", Instruction::PUSH, vec![TokenType::Identifier], vec![],1),
+        ("dec", Instruction::DEC, vec![TokenType::Identifier], vec![],1),
+        ("jmpr", Instruction::JMPR, vec![TokenType::LabelDst], vec![],1),
+
+        ("int", Instruction::INT, vec![TokenType::Value], vec![],2),
+        ("jmp", Instruction::JMP, vec![TokenType::LabelDst], vec![],2),
+        ("jmpif", Instruction::JMPIF, vec![TokenType::LabelDst], vec![],2),
+        ("cli", Instruction::CLI, vec![], vec![],1),
+        ("clf", Instruction::CLF, vec![], vec![],1),
+        ("hlt", Instruction::HLT, vec![], vec![],1)
+    ]);
     let opname = op.to_string().to_lowercase();
     //println!("op: {}", opname);
 
     // handle jmpif flags
-    for rule in RULES.iter() {
+    for rule in rules.iter() {
         if rule.0 == "jmpif" && opname.contains("jmpif") {
             if let Some(flagstr) = opname.split("jmpif").last() {
                 //println!("last: {}", flagstr);
@@ -139,23 +138,15 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
                 }
 
                 // check for register value
-                if let Some(tlval) = left_token_option {
-
-                    if left_values.contains(x)
-
-                    if let Some(lval) = left_values {
-                        if tlval.ttype != lval {
-                            panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", lval, tlval.ttype, tlval.line, (tlval.column - tlval.tvalue.len() - 1));
-                        }
+                if let Some(left_token) = left_token_option {
+                    if !left_values.contains(&left_token.ttype) {
+                        panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", left_values, left_token.ttype, left_token.line, (left_token.column - left_token.tvalue.len() - 1));
                     }
-
                 }
 
-                if let Some(trval) = right_token_option {
-                    if let Some(rval) = right_values {
-                        if trval.ttype != rval {
-                            panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", rval, trval.ttype, trval.line, (trval.column - trval.tvalue.len() - 1));
-                        }
+                if let Some(right_token) = right_token_option {
+                    if !right_values.contains(&right_token.ttype)  {
+                        panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", right_values, right_token.ttype, right_token.line, (right_token.column - right_token.tvalue.len() - 1));
                     }
                 }
 
@@ -164,14 +155,12 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
 
                 debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
                 operations.push((opname, op.clone() as u8, Some(a), Some(b)))
-            } else if left_values.is_some() && right_values.is_none() {
+            } else if !left_values.is_empty() && right_values.is_empty() {
                 let tlval = peekable_tokens.next();
 
-                if let Some(tlval) = tlval {
-                    if let Some(lval) = left_values {
-                        if tlval.ttype != lval {
-                            panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", lval, tlval.ttype, tlval.line, (tlval.column - tlval.tvalue.len()));
-                        }
+                if let Some(left_token) = left_token_option {
+                    if !left_values.contains(&left_token.ttype) {
+                        panic!("syntax error was expecting token type: {:?}, but received {:?}. line: {}, column: {}", left_values, left_token.ttype, left_token.line, (left_token.column - left_token.tvalue.len() - 1));
                     }
                 }
 
@@ -241,10 +230,10 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
                         operations.push((opname, op.clone() as u8, Some(a), None))
                     }
                 }
-            } else if left_values.is_none() && right_values.is_none() {
+            } else if left_values.is_empty() && right_values.is_empty() {
                 debug_ops.push(format!("{}: {}", op_address, opname.to_uppercase()));
                 operations.push((opname, op.clone() as u8, None, None))
-            } else if left_values.is_none() && right_values.is_some() {
+            } else if left_values.is_empty() && !right_values.is_empty() {
                 //panic!("Syntax error left value cannot be nothing, idiot...")
             }
 

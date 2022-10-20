@@ -24,8 +24,8 @@ pub struct Motherboard {
 
 // Motherboard boots from bootfile
 // Send cpu instructions to do as cycles
-impl Motherboard {  
-    pub fn new(bootfile: &str, instructions: &str) -> Motherboard { 
+impl Motherboard {
+    pub fn new(bootfile: &str, instructions: &str) -> Motherboard {
         Motherboard {
             cycle_i: 0,
             cpu: CPU::new(),            // new CPU with 3 general purpose registers
@@ -33,14 +33,14 @@ impl Motherboard {
             peripherals: HashMap::new(),
             bootimg: bootfile.to_string(),
             instructions: instructions.to_string()
-        } 
+        }
     }
- 
+
     pub fn process_peripherals(&mut self) {
         for (_, peripheral) in self.peripherals.iter_mut() {
             match peripheral {
                 Peripheral::Screen(a) => a.process(&mut self.cpu, &mut self.ram),
-                _ => {}
+                Peripheral::Keyboard(a) => a.process(&mut self.cpu, &mut self.ram),
             }
         }
     }
@@ -48,19 +48,27 @@ impl Motherboard {
     pub fn pass_to_peripheral(&mut self, perf: &str, value: u8) {
         for (_, peripheral) in self.peripherals.iter_mut() {
             match peripheral {
-                Peripheral::Screen(a) => a.update(value),                
-                _ => {}
+                Peripheral::Screen(a) => {
+                    if perf == "screen" {
+                        a.update(value)
+                    }
+                },
+                Peripheral::Keyboard(a) => {
+                    if perf == "keyboard" {
+                        a.update(value)
+                    }
+                },
             }
-        } 
+        }
     }
 
     pub fn reset_peripherals(&mut self) {
         for (_, peripheral) in self.peripherals.iter_mut() {
             match peripheral {
-                Peripheral::Screen(a) => a.clear_state(),                
-                _ => {}
+                Peripheral::Screen(a) => a.clear_state(),
+                Peripheral::Keyboard(a) => a.clear_state(),
             }
-        } 
+        }
 
         self.cpu.clearing = false;
     }
@@ -147,7 +155,6 @@ impl Motherboard {
     }
 
     pub fn boot(&mut self) {
-
         let boot_content = helpers::read_bin_vec(&self.bootimg);
 
         self.cpu.dbg_msg = format!("bin size: {:?}", &boot_content.len());

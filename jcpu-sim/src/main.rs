@@ -59,10 +59,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
     // create peripherals
     const SCREEN_SIZE: u8 = SCREEN_WIDTH * SCREEN_HEIGHT;
     let screen = Screen {buffer: [0; SCREEN_SIZE as usize]};
-    let kb = Keyboard {keys_pressed: vec![]}; 
+    let kb = Keyboard {keys_pressed: vec![]};
 
     let mut sim: Sim = Sim::new();
-    
+
     sim.mb.peripherals.insert("screen", Peripheral::Screen(screen));
     sim.mb.peripherals.insert("keyboad", Peripheral::Keyboard(kb));
 
@@ -153,17 +153,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             // for c in 0..screen.buffer.clone().len() {}
 
             if let Some(Peripheral::Screen(scr)) = sim.mb.peripherals.get("screen") {
-                // Do buffer stuff here 
+                // Do buffer stuff here
                 for h in 0..SCREEN_HEIGHT {
                     let mut vga_b:Vec <Span> = Vec::new();
-                
+
                     for i in 0..SCREEN_WIDTH {
                         let pos = i + ( SCREEN_HEIGHT * h );
                         let c_value = scr.buffer[pos as usize];
                         let color = Color::Rgb(c_value as u8, c_value as u8, c_value as u8);
                         vga_b.push(Span::styled(FULL, Style::default().fg(color)));
                     }
-                
+
                     text.push(Spans::from(vga_b));
                 }
             }
