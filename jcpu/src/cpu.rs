@@ -41,6 +41,8 @@ impl CPU {
             reg_out: 0,
             reg_int: 0,
             reg_sp: STACK_ADDR as u8,
+            dbg_msg: String::from("CPU started"),
+            clearing: false,
             alu: ALU {
                 A: 0,
                 B: 0,
@@ -55,11 +57,12 @@ impl CPU {
                 Lt: false,
                 Eq: false,
                 Zero: false,
+                Res: 0,
+                R1: 0,
+                R2: 0,
                 C: 0,          // Carry flag
                 S: 0,          // Sign flag
             },
-            dbg_msg: String::from("CPU started"),
-            clearing: false
         }
     }
 
@@ -86,7 +89,9 @@ impl CPU {
         self.alu.Lt = false;
         self.alu.Eq = false;
         self.alu.Zero = false;
-        self.alu.C = 0;
+        self.alu.R1 = 0;
+        self.alu.R2 = 0;
+        self.alu.S = 0;
         self.alu.S = 0;
         self.dbg_msg = String::from("CPU Reset");
         self.clearing = false;
@@ -117,6 +122,9 @@ impl CPU {
             } else if instruction == Instruction::HLT as u8 {
                 self.dbg_msg = String::from("halting");
                 return false;
+            } else if instruction == Instruction::SF as u8 {
+                //check if next byte is equal to 0b0100_0000 or 0b0010_0000
+                // set the ALU R1 or R2 high accordingly
             } else {
 
                 // opcode first 4 bits

@@ -2,6 +2,15 @@ use std::convert::TryInto;
 
 use jcpuinstructions::JumpFlag;
 
+const INT: u8          = 0b10000000;  // 0x80
+const REG_A_ISREG: u8  = 0b01000000;  // 0x40
+const REG_B_ISREG: u8  = 0b00100000;  // 0x20
+const FLAG_LT: u8      = 0b00010000;  // 0x10
+const FLAG_EQ: u8      = 0b00001000;  // 0x8
+const FLAG_Z: u8       = 0b00000100;  // 0x4
+const FLAG_SIGN: u8    = 0b00000010;  // 0x2
+const FLAG_CARRY: u8   = 0b00000001;  // 0x1
+
 pub struct ALU {
     pub A: u8,
     pub B: u8,
@@ -13,11 +22,18 @@ pub struct ALU {
     pub Shr: u8,
     pub Sum: u8,
 
+    pub Res: u8, // reserved flag
+    pub R1: u8,  // is R1 a register or a value
+    pub R2: u8,  // is R2 a register or a value
     pub Lt: bool,
     pub Eq: bool,
     pub Zero: bool,
-    pub C: u8,          // Carry in
-    pub S: u8,          // Sign flag
+    pub S: u8,  // Sign flag
+    pub C: u8,  // Carry in
+
+    //   0  0  0  0  0 0 0 0
+    // INT|R1|R2|LT|EQ|Z|S|C
+    pub flags: u8
 }
 
 impl ALU {
@@ -72,9 +88,15 @@ impl ALU {
         self.Shr = self.A >> self.B;
         self.Sum = self.A + self.B;
 
-        self.Lt = if self.A < self.B { true } else { false };
-        self.Eq = if self.A == self.B { true } else { false };
-        self.Zero = if self.A == 0 { true } else { false };
+        // self.Lt = if self.A < self.B { true } else { false };
+        // self.Eq = if self.A == self.B { true } else { false };
+        // self.Zero = if self.A == 0 { true } else { false };
+
+        if self.A < self.B {
+            self.flags |= FLAG_Z
+        } else {
+            self.flags ^= FLAG_Z
+        }
     }
 
     fn check_sign_and_carry(&mut self, num: isize) {

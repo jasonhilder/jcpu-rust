@@ -74,6 +74,9 @@ pub enum Instruction {
 
     INT = 0b00000001,
     CLI = 0b00000011,
+    // SET VALUE Flag, takes a value of 0b0100_0000 or 0b0010_0000 to let us know if
+    // R1 or 2 is a value or a register
+    SF  = 0b00000010,
 
     // HALT
     HLT = 0b01110000

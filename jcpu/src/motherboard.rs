@@ -146,6 +146,8 @@ impl Motherboard {
             ("NOT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Not)),
             ("SHIFT LEFT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shl)),
             ("SHIFT RIGHT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shr)),
+            ("R1 VALUE Flag  ".to_string(), format!("{:?}",self.cpu.alu.R1)),
+            ("R2 VALUE Flag  ".to_string(), format!("{:?}",self.cpu.alu.R2)),
             ("LESS THAN Flag  ".to_string(), if self.cpu.alu.Lt {"1".to_string()} else {"0".to_string()}),
             ("EQUAL TO Flag  ".to_string(), if self.cpu.alu.Eq {"1".to_string()} else {"0".to_string()}),
             ("ZERO Flag  ".to_string(), if self.cpu.alu.Zero {"1".to_string()} else {"0".to_string()}),

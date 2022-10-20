@@ -25,6 +25,7 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usi
         ("int", Instruction::INT, vec![TokenType::Value], vec![],2),
         ("jmp", Instruction::JMP, vec![TokenType::LabelDst], vec![],2),
         ("jmpif", Instruction::JMPIF, vec![TokenType::LabelDst], vec![],2),
+        ("sf", Instruction::SF, vec![TokenType::Value], vec![],2),
         ("cli", Instruction::CLI, vec![], vec![],1),
         ("clf", Instruction::CLF, vec![], vec![],1),
         ("hlt", Instruction::HLT, vec![], vec![],1)
