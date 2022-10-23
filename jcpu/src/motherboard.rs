@@ -77,6 +77,10 @@ impl Motherboard {
         &self.ram.memory
     }
 
+    pub fn kb_info(&self) -> &[u8] {
+        &self.ram.memory[0..10]
+    }
+
     pub fn mb_info(&self) -> Vec<(String,String)> {
         vec![
             ("Cycle".to_string(), format!("{}",self.cycle_i)),
@@ -146,13 +150,7 @@ impl Motherboard {
             ("NOT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Not)),
             ("SHIFT LEFT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shl)),
             ("SHIFT RIGHT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shr)),
-            ("R1 VALUE Flag  ".to_string(), format!("{:?}",self.cpu.alu.R1)),
-            ("R2 VALUE Flag  ".to_string(), format!("{:?}",self.cpu.alu.R2)),
-            ("LESS THAN Flag  ".to_string(), if self.cpu.alu.Lt {"1".to_string()} else {"0".to_string()}),
-            ("EQUAL TO Flag  ".to_string(), if self.cpu.alu.Eq {"1".to_string()} else {"0".to_string()}),
-            ("ZERO Flag  ".to_string(), if self.cpu.alu.Zero {"1".to_string()} else {"0".to_string()}),
-            ("CARRY Flag  ".to_string(), format!("{:?}",self.cpu.alu.C)),
-            ("Sign Flag  ".to_string(), format!("{:?}",self.cpu.alu.S)),
+            ("FLAGS INT|R1|R2|LT|EQ|Z|S|C".to_string(), format!("{:08b}", self.cpu.alu.flags))
         ]
     }
 

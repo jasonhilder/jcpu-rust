@@ -53,15 +53,7 @@ impl CPU {
                 Shl: 0,
                 Shr: 0,
                 Sum: 0,
-
-                Lt: false,
-                Eq: false,
-                Zero: false,
-                Res: 0,
-                R1: 0,
-                R2: 0,
-                C: 0,          // Carry flag
-                S: 0,          // Sign flag
+                flags: 0,
             },
         }
     }
@@ -86,13 +78,7 @@ impl CPU {
         self.alu.Shr = 0;
         self.alu.Sum = 0;
 
-        self.alu.Lt = false;
-        self.alu.Eq = false;
-        self.alu.Zero = false;
-        self.alu.R1 = 0;
-        self.alu.R2 = 0;
-        self.alu.S = 0;
-        self.alu.S = 0;
+        self.alu.flags = 0;
         self.dbg_msg = String::from("CPU Reset");
         self.clearing = false;
     }
@@ -125,6 +111,14 @@ impl CPU {
             } else if instruction == Instruction::SF as u8 {
                 //check if next byte is equal to 0b0100_0000 or 0b0010_0000
                 // set the ALU R1 or R2 high accordingly
+                self.reg_mar += 1;
+
+                let flag_setter = ram.read(self.reg_mar);
+                self.alu.flags |= flag_setter;
+
+                self.dbg_msg = format!("Set Flags now: {:08b}", self.alu.flags);
+
+                self.reg_iar += 1;
             } else {
 
                 // opcode first 4 bits
@@ -173,17 +167,12 @@ impl CPU {
 
                     self.reg_mar = self.reg_iar;
                 } else if opcode == Instruction::JMPIF as u8 {
-                    if self.alu.match_flags(flags) {
-                        self.dbg_msg = String::from("Jump if check passed");
-                        self.reg_mar += 1;
+                    self.alu.match_flags(flags);
+                    self.reg_mar += 1;
 
-                        self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
+                    self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
 
-                        self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
-                    }  else {
-                        self.dbg_msg = String::from("Jump if check failed");
-                        self.reg_iar += 1;
-                    }
+                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
                 } else {
                     panic!("[cpu] unknown instruction")
                 }
@@ -200,6 +189,8 @@ impl CPU {
             let reg_a = (instruction & 0x0C) >> 2;
             let reg_b = instruction & 0x03;
 
+            // @FIXME should I check here for flags high bit and
+            // then use get_reg or get_val accordingly
             self.alu.set_a(self.get_register(reg_a));
             self.alu.set_b(self.get_register(reg_b));
 
@@ -210,6 +201,7 @@ impl CPU {
             } else if opcode == Instruction::SUB as u8 {
                 let res = self.alu.op_sub();
                 self.set_register(reg_b, res)
+                //@TODO CMP needs to move out of alu instructions
             } else if opcode == Instruction::CMP as u8 {
                 self.dbg_msg = String::from("Comparing reg A and reg B");
                 self.alu.A = self.alu.op_sub();

@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use jcpuinstructions::JumpFlag;
 
 const INT: u8          = 0b10000000;  // 0x80
@@ -21,16 +19,6 @@ pub struct ALU {
     pub Shl: u8,
     pub Shr: u8,
     pub Sum: u8,
-
-    pub Res: u8, // reserved flag
-    pub R1: u8,  // is R1 a register or a value
-    pub R2: u8,  // is R2 a register or a value
-    pub Lt: bool,
-    pub Eq: bool,
-    pub Zero: bool,
-    pub S: u8,  // Sign flag
-    pub C: u8,  // Carry in
-
     //   0  0  0  0  0 0 0 0
     // INT|R1|R2|LT|EQ|Z|S|C
     pub flags: u8
@@ -88,35 +76,48 @@ impl ALU {
         self.Shr = self.A >> self.B;
         self.Sum = self.A + self.B;
 
-        // self.Lt = if self.A < self.B { true } else { false };
-        // self.Eq = if self.A == self.B { true } else { false };
-        // self.Zero = if self.A == 0 { true } else { false };
-
         if self.A < self.B {
             self.flags |= FLAG_Z
         } else {
             self.flags ^= FLAG_Z
         }
+
+        if self.A == self.B {
+            self.flags |= FLAG_EQ
+        } else {
+            self.flags ^= FLAG_EQ
+        }
+
+        if self.A < self.B {
+            self.flags |= FLAG_LT
+        } else {
+            self.flags ^= FLAG_LT
+        }
     }
 
     fn check_sign_and_carry(&mut self, num: isize) {
         if num > 127  || num < -128 {
-            self.C = 1;
+            self.flags |= FLAG_CARRY
         }
 
         if num < 0 {
-           self.S = 1;
+            self.flags |= FLAG_SIGN
         }
     }
 
 
-    pub fn match_flags(&self, flags: u8) -> bool {
+    pub fn match_flags(&mut self, flags: u8) {
 
         if flags == JumpFlag::CF as u8 {
-            return if self.C == 1 { true } else { false };
+            return if self.flags & FLAG_CARRY > 0 {
+                self.flags |= FLAG_CARRY;
+            } else {
+                self.flags ^= FLAG_CARRY;
+            };
         };
+
         if flags == JumpFlag::Z as u8 {
-            return self.Zero;
+            self.flags |= FLAG_Z;
         };
 
         // if flags == JumpFlag::E as u8 {};
@@ -134,6 +135,5 @@ impl ALU {
         // if flags == JumpFlag::CAE as u8 {};
         // if flags == JumpFlag::CAEZ as u8 {};
 
-        false
     }
 }
