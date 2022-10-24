@@ -15,7 +15,7 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usi
         ("st",Instruction::ST,vec![TokenType::Identifier],vec![TokenType::Identifier],2),
         ("add",Instruction::ADD,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
         ("sub",Instruction::SUB,vec![TokenType::Identifier],vec![TokenType::Identifier],1),
-        ("cmp", Instruction::CMP, vec![TokenType::Identifier], vec![TokenType::Identifier, TokenType::Value],1),
+        ("cmp", Instruction::CMP, vec![TokenType::Identifier], vec![TokenType::Identifier, TokenType::Value],2),
         ("inc", Instruction::INC, vec![TokenType::Identifier], vec![],1),
         ("pop", Instruction::POP, vec![TokenType::Identifier], vec![],1),
         ("push", Instruction::PUSH, vec![TokenType::Identifier], vec![],1),
@@ -25,7 +25,7 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usi
         ("int", Instruction::INT, vec![TokenType::Value], vec![],2),
         ("jmp", Instruction::JMP, vec![TokenType::LabelDst], vec![],2),
         ("jmpif", Instruction::JMPIF, vec![TokenType::LabelDst], vec![],2),
-        ("sf", Instruction::SF, vec![TokenType::Value], vec![],2),
+        ("sf", Instruction::SF, vec![TokenType::Value], vec![], 2),
         ("cli", Instruction::CLI, vec![], vec![],1),
         ("clf", Instruction::CLF, vec![], vec![],1),
         ("hlt", Instruction::HLT, vec![], vec![],1)
@@ -43,7 +43,6 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usi
                         return Some((rule.0, (Instruction::JMPIF as u8) | i as u8 , rule.2.clone(), vec![], rule.4));
                     }
                 }
-
                 panic!("unknown jump flag on jumpif");
             };
         } else if rule.0 == opname {
@@ -152,7 +151,35 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
                 }
 
                 let a = left_token_option.unwrap().clone();
+                // if a.ttype == TokenType::Value {
+                //     // check if ttype is identifier or value
+                //     // if value add sf instruction
+                //     //
+                //     let sf_1 = Token {
+                //         ttype: TokenType::Value,
+                //         tvalue: String::from("64"),
+                //         line: right_token_option.unwrap().line,
+                //         column: right_token_option.unwrap().column
+                //     };
+                //     op_address += 1;
+                //     operations.push(("sf", 0b00000010, Some(sf_1), None));
+                // }
+
                 let b = right_token_option.unwrap().clone();
+                if b.ttype == TokenType::Value {
+                    // check if ttype is identifier or value
+                    // if value add sf instruction
+                    let sf_2 = Token {
+                        ttype: TokenType::Value,
+                        tvalue: String::from("32"),
+                        line: right_token_option.unwrap().line,
+                        column: right_token_option.unwrap().column
+                    };
+
+                    debug_ops.push(format!("{}: {} {}", op_address, "SF".to_string(), &sf_2.tvalue));
+                    operations.push(("sf", 0b00000010, Some(sf_2), None));
+                    op_address += 2;
+                }
 
                 debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
                 operations.push((opname, op.clone() as u8, Some(a), Some(b)))
@@ -273,7 +300,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>, output_path: Stri
                 bin_operations.push(r_value);
                 // need to get next byte
             },
-            "add" | "sub" | "ld" | "st" | "cmp" => {
+            "add" | "sub" | "ld" | "st" => {
                 // u8|u8|u8 packed
                 // will panic if not register here
                 let l_register = get_register(op.2.as_ref().unwrap());
@@ -281,14 +308,38 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>, output_path: Stri
                 // println!("{:08b}", op.1);
                 bin_operations.push( (op.1.clone() as u8) | (l_register.clone() as u8) << 2 | (r_register.clone() as u8) << 0 );
             },
+            "cmp" => {
+                let l_token = op.2.as_ref().unwrap();
+                let r_token = op.3.as_ref().unwrap();
+                let r_val: u8;
+
+                if r_token.ttype == TokenType::Identifier {
+                    r_val = get_register(r_token) as u8;
+                } else {
+                    r_val = get_value(r_token);
+                }
+
+                // println!("{:08b}", op.1);
+                bin_operations.push( (op.1.clone() as u8) | (get_register(l_token) as u8) << 2 );
+                // cmp can compare a register to a register or a value
+                bin_operations.push(r_val);
+            },
             "jmpr" | "dec" | "inc" | "push" | "pop" => {
                 // u8|u8 packed
                 // will panic if not register here
-                let l_register = get_register(op.2.as_ref().unwrap());
-                bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 );
+                let t_operation = op.2.as_ref().unwrap();
+
+                if t_operation.ttype == TokenType::Identifier {
+                    let l_register = get_register(op.2.as_ref().unwrap());
+                    bin_operations.push( (op.1.clone() as u8) | (l_register as u8) << 2 );
+
+                } else if t_operation.ttype == TokenType::Value {
+                    let l_value = get_value(op.2.as_ref().unwrap());
+                    bin_operations.push( (op.1.clone() as u8) | (l_value as u8) );
+                }
             },
             // "jmp"
-            "jmpif" | "jmp" | "int" => {
+            "jmpif" | "jmp" | "int" | "sf" => {
                 let l_value = get_value(op.2.as_ref().unwrap());
 
                 bin_operations.push(op.1.clone());
