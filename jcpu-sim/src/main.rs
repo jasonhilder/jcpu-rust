@@ -79,6 +79,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
             let info_cpu_data = sim.get_cpu_details();
             let info_alu_data = sim.get_alu_details();
             let info_ram = sim.get_ram_info();
+            let info_kb = sim.get_kb_info();
             let info_mb = sim.get_mb_info();
             let info_dbg = sim.get_dbg_info();
             let info_instructions = sim.get_cpu_instructions_text();
@@ -99,7 +100,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(30)].as_ref())
+                .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
                 .split(wrapper[0]);
 
             let instruction_container = Layout::default()
@@ -230,10 +231,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                     Constraint::Length(30),
                     Constraint::Min(10),
                 ]);
-
-
             f.render_widget(t_a, cpu_blocks[1]);
-
 
             // -----------------------------------------------------------------
             // Bottom two inner blocks
@@ -241,8 +239,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
                 .split(chunks[1]);
-
-
 
             // -----------------------------------------------------------------
             // Bottom left block (RAM)
@@ -278,15 +274,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             f.render_widget(r_paragraph, bottom_chunks[0]);
 
-
-
             // -----------------------------------------------------------------
             // Bottom right block (MB INFO)
 
             // split mb block
             let mb_blocks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Percentage(90), Constraint::Percentage(10)].as_ref())
+                .constraints([Constraint::Percentage(60), Constraint::Percentage(20), Constraint::Percentage(10)].as_ref())
                 .split(bottom_chunks[1]);
 
             let mb_block = Block::default()
@@ -324,6 +318,30 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
 
             f.render_widget(t_mb, mb_blocks[0]);
 
+            // text bar
+            let text_block = Block::default()
+                .title(Span::styled(
+                    "KEYBOARD INPUT", Style::default().fg(Color::White)
+                ))
+                .title_alignment(Alignment::Left)
+                .borders(Borders::ALL);
+
+            // ram kb input
+            let kb_data = info_kb;
+
+            let mut k:Vec <Span> = Vec::new();
+            (0..kb_data.len()).for_each(|i| {
+                if bin_data[i] == 0 {
+                    k.push(Span::styled(format!("{:02x} ", bin_data[i]), Style::default().fg(Color::White)));
+                } else {
+                    k.push(Span::styled(format!("{} ", bin_data[i] as char), Style::default().fg(Color::White)));
+                }
+            });
+
+            let kb_chars = Paragraph::new(Spans::from(k)).block(text_block).alignment(Alignment::Left).wrap(Wrap { trim : true});
+
+            f.render_widget(kb_chars, mb_blocks[1]);
+
             // debug bar
             let dbg_block = Block::default()
                 .title(Span::styled(
@@ -337,8 +355,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
                 .alignment(Alignment::Left)
                 .wrap(Wrap { trim: true });
 
+            f.render_widget(dbg_paragraph, mb_blocks[2]);
 
-            f.render_widget(dbg_paragraph, mb_blocks[1]);
             // -----------------------------------------------------------------
             // Bottom Debug bar
 

@@ -29,7 +29,7 @@ impl Sim {
     }
     pub fn get_screen_info(&mut self) {
         for p in self.mb.peripherals.iter() {
-            
+
         }
     }
     pub fn get_cpu_details(&mut self) -> Vec<(String,String)> {
@@ -43,6 +43,9 @@ impl Sim {
     }
     pub fn get_ram_info(&mut self) -> Vec<u8> {
         self.mb.ram_info().to_vec()
+    }
+    pub fn get_kb_info(&mut self) -> Vec<u8> {
+        self.mb.kb_info().to_vec()
     }
     pub fn get_dbg_info(&mut self) -> String {
         self.mb.dbg_info()
