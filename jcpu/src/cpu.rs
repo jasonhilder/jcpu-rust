@@ -1,6 +1,6 @@
 use jcpuinstructions::{Instruction, Register};
 
-use crate::{alu::ALU, ram::Ram, motherboard::{BOOT_ADDR, STACK_ADDR}};
+use crate::{alu::{ALU, REG_A_ISREG, REG_B_ISREG}, ram::Ram, motherboard::{BOOT_ADDR, STACK_ADDR}};
 
 pub struct CPU {
     // just some descriptors because we're fancy like that
@@ -167,12 +167,18 @@ impl CPU {
 
                     self.reg_mar = self.reg_iar;
                 } else if opcode == Instruction::JMPIF as u8 {
-                    self.alu.match_flags(flags);
-                    self.reg_mar += 1;
+                    // @FIXME
+                    if self.alu.match_flags(flags) {
+                        self.dbg_msg = String::from("Jump if check passed");
+                        self.reg_mar += 1;
 
-                    self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
+                        self.dbg_msg = format!("Retrieving address from {}, read({})", self.reg_mar, ram.read(self.reg_mar));
 
-                    self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
+                        self.reg_iar = (BOOT_ADDR as u8) + ram.read(self.reg_mar) - 1;
+                    }  else {
+                        self.dbg_msg = String::from("Jump if check failed");
+                        self.reg_iar += 1;
+                    }
                 } else {
                     panic!("[cpu] unknown instruction")
                 }
@@ -189,10 +195,13 @@ impl CPU {
             let reg_a = (instruction & 0x0C) >> 2;
             let reg_b = instruction & 0x03;
 
-            // @FIXME should I check here for flags high bit and
-            // then use get_reg or get_val accordingly
-            self.alu.set_a(self.get_register(reg_a));
-            self.alu.set_b(self.get_register(reg_b));
+
+            if self.alu.flags & REG_A_ISREG == 0 {
+                self.alu.set_a(self.get_register(reg_a));
+            }
+            if self.alu.flags & REG_B_ISREG == 0 {
+                self.alu.set_b(self.get_register(reg_b));
+            }
 
             if opcode == Instruction::ADD as u8 {
                 let res = self.alu.op_add();
@@ -201,17 +210,25 @@ impl CPU {
             } else if opcode == Instruction::SUB as u8 {
                 let res = self.alu.op_sub();
                 self.set_register(reg_b, res)
-                //@TODO CMP needs to move out of alu instructions
             } else if opcode == Instruction::CMP as u8 {
-                self.dbg_msg = String::from("Comparing reg A and reg B");
-                self.alu.A = self.alu.op_sub();
+                //@TODO CMP needs to move out of alu instructions
+                self.reg_mar += 1;
+
+                self.alu.set_b(ram.read(self.reg_mar));
+
+                let res = self.alu.op_sub();
+
+                self.dbg_msg = format!("Comparing: {} - {} = {}", self.alu.A, self.alu.B, &res);
+                self.alu.A = res;
+
+                self.reg_iar += 1
             } else if opcode == Instruction::INC as u8 {
                 let res = self.alu.op_inc();
-                self.set_register(reg_a, res);
+                self.set_register(reg_a, res)
             } else if opcode == Instruction::DEC as u8 {
                 let res = self.alu.op_dec();
                 self.dbg_msg = format!("Decrementing reg {} to value {}", (reg_a + 1), res);
-                self.set_register(reg_a, res);
+                self.set_register(reg_a, res)
             } else if opcode == Instruction::PUSH as u8 {
                 // SP is after the BIN_SIZE so on boot we plus 1
                 // @TODO check for register value or literal value

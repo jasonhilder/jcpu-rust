@@ -148,6 +148,7 @@ impl Motherboard {
             ("OR Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Or)),
             ("AND Flag  ".to_string(), format!("{:02x}",self.cpu.alu.And)),
             ("NOT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Not)),
+            ("SUM Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Sum)),
             ("SHIFT LEFT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shl)),
             ("SHIFT RIGHT Flag  ".to_string(), format!("{:02x}",self.cpu.alu.Shr)),
             ("FLAGS INT|R1|R2|LT|EQ|Z|S|C".to_string(), format!("{:08b}", self.cpu.alu.flags))
