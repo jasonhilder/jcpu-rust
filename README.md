@@ -1,4 +1,4 @@
-#RUST CPU SIMULATOR
+# RUST CPU SIMULATOR
 
 ### This readme is still a WIP
 
