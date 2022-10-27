@@ -108,6 +108,8 @@ impl CPU {
             } else if instruction == Instruction::HLT as u8 {
                 self.dbg_msg = String::from("halting");
                 return false;
+            } else if instruction == Instruction::CRF as u8 {
+                self.alu.flags &= 0b1001_1111
             } else if instruction == Instruction::SF as u8 {
                 //check if next byte is equal to 0b0100_0000 or 0b0010_0000
                 // set the ALU R1 or R2 high accordingly
@@ -212,9 +214,15 @@ impl CPU {
                 self.set_register(reg_b, res)
             } else if opcode == Instruction::CMP as u8 {
                 //@TODO CMP needs to move out of alu instructions
+                //check flags in if
                 self.reg_mar += 1;
+                let next_byte = ram.read(self.reg_mar);
 
-                self.alu.set_b(ram.read(self.reg_mar));
+                if self.alu.flags & REG_B_ISREG > 1 {
+                    self.alu.set_b(next_byte);
+                } else {
+                    self.alu.set_b(self.get_register(next_byte));
+                }
 
                 let res = self.alu.op_sub();
 

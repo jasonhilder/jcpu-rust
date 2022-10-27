@@ -28,6 +28,7 @@ fn rule_for_op(op: &str) -> Option<(&str, u8, Vec<TokenType>, Vec<TokenType>,usi
         ("sf", Instruction::SF, vec![TokenType::Value], vec![], 2),
         ("cli", Instruction::CLI, vec![], vec![],1),
         ("clf", Instruction::CLF, vec![], vec![],1),
+        ("crf", Instruction::CRF, vec![], vec![],1),
         ("hlt", Instruction::HLT, vec![], vec![],1)
     ]);
     let opname = op.to_string().to_lowercase();
@@ -166,23 +167,34 @@ pub fn lex(tokens: Vec<Token>, output_path: String){
                 // }
 
                 let b = right_token_option.unwrap().clone();
-                if b.ttype == TokenType::Value {
-                    // check if ttype is identifier or value
-                    // if value add sf instruction
-                    let sf_2 = Token {
-                        ttype: TokenType::Value,
-                        tvalue: String::from("32"),
-                        line: right_token_option.unwrap().line,
-                        column: right_token_option.unwrap().column
-                    };
+                if opname == "cmp" {
+                    if b.ttype == TokenType::Value {
+                        // check if ttype is identifier or value
+                        // if value add sf instruction
+                        let sf_2 = Token {
+                            ttype: TokenType::Value,
+                            tvalue: String::from("32"),
+                            line: right_token_option.unwrap().line,
+                            column: right_token_option.unwrap().column
+                        };
 
-                    debug_ops.push(format!("{}: {} {}", op_address, "SF".to_string(), &sf_2.tvalue));
-                    operations.push(("sf", 0b00000010, Some(sf_2), None));
-                    op_address += 2;
+                        debug_ops.push(format!("{}: {} {}", op_address, "SF".to_string(), &sf_2.tvalue));
+                        operations.push(("sf", 0b00000010, Some(sf_2), None));
+                        op_address += 2;
+
+                    }
+
+                    debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
+                    operations.push((opname, op.clone() as u8, Some(a), Some(b)));
+
+                    op_address += 1;
+                    debug_ops.push(format!("{}: {}", op_address, "CRF".to_string()));
+                    operations.push(("crf", 0b00000100, None, None))
+                } else {
+                    debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
+                    operations.push((opname, op.clone() as u8, Some(a), Some(b)))
                 }
 
-                debug_ops.push(format!("{}: {} {}, {}", op_address, &opname.to_uppercase(), &a.tvalue, &b.tvalue));
-                operations.push((opname, op.clone() as u8, Some(a), Some(b)))
             } else if !left_values.is_empty() && right_values.is_empty() {
                 let tlval = peekable_tokens.next();
 
@@ -346,7 +358,7 @@ fn compile(vec: Vec<(&str, u8, Option<Token>, Option<Token>)>, output_path: Stri
                 bin_operations.push(l_value as u8);
                 // jmpif 0x04
             },
-            "clf" | "hlt" | "cli" => {
+            "clf" | "hlt" | "cli" | "crf" => {
                 bin_operations.push(op.1.clone());
             },
             _ => todo!()
