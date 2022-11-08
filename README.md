@@ -24,3 +24,25 @@ Run the sim.
 
 - boot.img: What the sim reads, it is the binary instructions that have been compiled.
 - instructions.d: A debug file for the sim, to show the deassembled instructions.
+
+## Available Instructions
+
+* DATA   Register, Value
+* ADD    Register, Register
+* SUB    Register, Register
+* CMP    Register, Value|Register
+* INC    Register
+* DEC    Register
+* ST     Register, Register
+* LD     Register, Register
+* JMPR   Register
+* JMP**  Address
+* JMPIF  Address
+* PUSH   Register|Value
+* POP    Register
+* INT    Value
+* SF     Value
+* CLF
+* CLI
+* CRF
+* HLT
